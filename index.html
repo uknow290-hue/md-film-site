@@ -198,7 +198,7 @@ html[lang="ar"] .steps li { letter-spacing: 0; }
 .theater .x { position: absolute; top: var(--my); inset-inline-end: calc(var(--mx) + var(--g)); }
 .th-box { width: min(92vw, 1500px, calc((100vh - 230px) * 16 / 9)); }
 .th-media { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; }
-.th-media video, .th-media canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+.th-media video, .th-media canvas, .th-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; border: 0; }
 .th-meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 2em; margin-top: 1.3em; }
 .th-meta h3 { margin: 0 0 .25em; font-size: clamp(22px, 2.2vw, 40px); font-weight: 500; letter-spacing: -.035em; line-height: 1.05; }
 html[lang="ar"] .th-meta h3 { letter-spacing: 0; line-height: 1.3; }
@@ -393,7 +393,7 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
 <div class="theater" id="theater" role="dialog" aria-modal="true" aria-labelledby="thTitle" inert>
   <button class="x mono blink" data-close data-t="close">Close</button>
   <div class="th-box">
-    <div class="th-media"><canvas id="thCanvas" width="1280" height="720"></canvas><video id="thVideo" controls playsinline hidden></video></div>
+    <div class="th-media"><canvas id="thCanvas" width="1280" height="720"></canvas><video id="thVideo" controls playsinline hidden></video><iframe id="thFrame" hidden allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
     <div class="th-meta">
       <div><h3 id="thTitle"></h3><span class="mono" id="thKind"></span></div>
       <div><p id="thDesc"></p><a class="btn mono" href="mailto:hello@md-film.com" data-t="cta">Let's talk</a></div>
@@ -454,9 +454,11 @@ const FILMS = [
     o: { light: [220, 235, 255], floorTop: [30, 96, 52], floorBot: [8, 36, 20], fanA: [220, 220, 230], fanB: [60, 150, 90] },
     en: { title: "Kit reveal", kind: "Promo", desc: "A promo film that unveils a team's new kit." },
     ar: { title: "كشف الطقم", kind: "فيلم ترويجي", desc: "فيلم ترويجي يكشف عن الطقم الجديد للفريق." } },
-  { slug: "night-city", video: "videos/night-city.mp4", scene: "city", seed: 77, o: {},
-    en: { title: "Night city", kind: "Brand film", desc: "A brand film shot across the city after dark." },
-    ar: { title: "المدينة ليلًا", kind: "فيلم العلامة", desc: "فيلم للعلامة التجارية يجوب المدينة بعد حلول الظلام." } },
+  /* yt: a YouTube video id. The player then shows that video, and the tile uses its thumbnail
+     (unless videos/<slug>.mp4 exists, which always wins for the tile). */
+  { slug: "boulevard-world", yt: "Xv8FXny_aB0", video: "videos/boulevard-world.mp4", scene: "city", seed: 77, o: {},
+    en: { title: "Boulevard World", kind: "Cinematic film", desc: "Boulevard World in Riyadh, shot on the Sony FX3." },
+    ar: { title: "بوليفارد وورلد", kind: "فيلم سينمائي", desc: "بوليفارد وورلد في الرياض، صُوِّر بكاميرا Sony FX3." } },
   { slug: "fire-safety", video: "videos/fire-safety.mp4", scene: "embers", seed: 41, o: {},
     en: { title: "Fire safety", kind: "Awareness series", desc: "An awareness series on preventing fires and responding to them." },
     ar: { title: "السلامة من الحرائق", kind: "سلسلة توعوية", desc: "سلسلة توعوية عن الوقاية من الحرائق وطرق التعامل معها." } },
@@ -526,7 +528,7 @@ const el = {
   stage: $("#stage"), cv: $("#gl"), home: $("#home"), film: $("#film"), list: $("#list"),
   fTitle: $("#fTitle"), fDesc: $("#fDesc"), fIdx: $("#fIdx"), fKind: $("#fKind"),
   chip: $("#chip"), tc: $("#tc"), menu: $("#menu"), sheet: $("#sheet"), scrim: $("#scrim"), theater: $("#theater"),
-  thVideo: $("#thVideo"), thCanvas: $("#thCanvas"), thTitle: $("#thTitle"), thKind: $("#thKind"), thDesc: $("#thDesc"),
+  thVideo: $("#thVideo"), thCanvas: $("#thCanvas"), thFrame: $("#thFrame"), thTitle: $("#thTitle"), thKind: $("#thKind"), thDesc: $("#thDesc"),
   langBtn: $("#langBtn"), langBtn2: $("#langBtn2"), menuBtn: $("#menuBtn"), copyBtn: $("#copyBtn"),
   op: $("#op"), opFlash: $("#opFlash"), opClip: $("#opClip"), opTc: $("#opTc"), opShot: $("#opShot"), opS1: $("#opS1"), opS2: $("#opS2"), chipT: $("#chipT"),
   lv1: $("#lv1"), lv2: $("#lv2"), lh1: $("#lh1"), lh2: $("#lh2"), d: [$("#d1"), $("#d2"), $("#d3"), $("#d4")]
@@ -803,8 +805,36 @@ function paintFilm(c, i, t) {
     if (va > ca) { sw = sh * ca; sx = (v.videoWidth - sw) / 2; } else { sh = sw / ca; sy = (v.videoHeight - sh) / 2; }
     c.drawImage(v, sx, sy, sw, sh, 0, 0, CW, CH); return;
   }
+  if (f.photo) { c.drawImage(f.photo, 0, 0); return; }                 /* a poster image (e.g. the YouTube thumbnail) */
   c.drawImage(f.still, 0, 0);
   c.save(); c.globalCompositeOperation = "lighter"; MOTION[f.scene](c, CW, CH, t + i * 7.3, f.o, f.parts); c.restore();
+}
+/* poster images for films that link to YouTube: the thumbnail, cropped to the tile, with the same vignette as the drawn stills */
+function loadPosters() {
+  FILMS.forEach(f => {
+    if (!f.yt && !f.poster) return;
+    const urls = f.poster ? [f.poster] : ["maxresdefault", "sddefault", "hqdefault"].map(n => "https://i.ytimg.com/vi/" + f.yt + "/" + n + ".jpg");
+    f.posterWait = true;
+    const next = () => {
+      const u = urls.shift();
+      if (!u) { f.posterWait = false; return; }
+      const im = new Image(); im.crossOrigin = "anonymous";
+      im.onerror = next;
+      im.onload = () => {
+        if (im.naturalWidth < 200) return next();                      /* YouTube answers a missing size with a tiny grey card */
+        const cv = document.createElement("canvas"); cv.width = CW; cv.height = CH; const c = cv.getContext("2d");
+        const ia = im.naturalWidth / im.naturalHeight, ca = CW / CH;
+        let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0;
+        if (ia > ca) { sw = sh * ca; sx = (im.naturalWidth - sw) / 2; } else { sh = sw / ca; sy = (im.naturalHeight - sh) / 2; }
+        c.drawImage(im, sx, sy, sw, sh, 0, 0, CW, CH);
+        const v = c.createRadialGradient(CW / 2, CH / 2, CH * .45, CW / 2, CH / 2, CW * .75);
+        v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)"); c.fillStyle = v; c.fillRect(0, 0, CW, CH);
+        f.photo = cv; f.posterWait = false; dirty = 3;
+      };
+      im.src = u;
+    };
+    next();
+  });
 }
 function loadVideos() {
   FILMS.forEach(f => {
@@ -965,6 +995,7 @@ function uploadCell(i, t) {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, (i % COLS) * CW, Math.floor(i / COLS) * CH, gl.RGBA, gl.UNSIGNED_BYTE, scratch);
   } catch (e) {
     if (f.live) { f.live = false; f.failed = true; newScratch(); }     /* e.g. a cross-origin video: fall back to the still */
+    else if (f.photo) { f.photo = null; newScratch(); }                /* a poster the browser may not read: back to the drawn still */
   }
 }
 
@@ -1267,7 +1298,12 @@ function openTheater(i) {
   const f = FILMS[i], L = f[lang];
   el.thTitle.textContent = L.title; el.thKind.textContent = L.kind; el.thDesc.textContent = L.desc;
   el.chip.classList.remove("on");
-  if (f.live) { el.thVideo.hidden = false; el.thCanvas.hidden = true; el.thVideo.src = f.video; el.thVideo.play().catch(() => {}); }
+  el.thFrame.hidden = true;
+  if (f.yt) {                                                          /* the full film lives on YouTube */
+    el.thVideo.hidden = true; el.thCanvas.hidden = true; el.thFrame.hidden = false; el.thFrame.title = L.title;
+    el.thFrame.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(f.yt) + "?autoplay=1&rel=0&playsinline=1&hl=" + lang;
+  }
+  else if (f.live) { el.thVideo.hidden = false; el.thCanvas.hidden = true; el.thVideo.src = f.video; el.thVideo.play().catch(() => {}); }
   else { el.thVideo.hidden = true; el.thCanvas.hidden = false; }
   thFilm = i; el.theater.classList.add("open"); el.theater.inert = false; overlay |= 4;
   const b = $("[data-close]", el.theater); if (b) b.focus({ preventScroll: true });
@@ -1275,6 +1311,7 @@ function openTheater(i) {
 function closeTheater() {
   el.theater.classList.remove("open"); el.theater.inert = true; overlay &= ~4; thFilm = -1;
   try { el.thVideo.pause(); el.thVideo.removeAttribute("src"); el.thVideo.load(); } catch (e) {}
+  if (!el.thFrame.hidden) { el.thFrame.removeAttribute("src"); el.thFrame.hidden = true; }   /* stops the YouTube player */
 }
 
 el.menuBtn.addEventListener("click", openMenu);
@@ -1308,7 +1345,7 @@ function updateFlash(now) {
   el.opFlash.style.opacity = a.toFixed(3);
   if (u >= 1) fl.on = false;
 }
-const videosSettled = () => FILMS.every(f => !f.el || f.live || f.failed);
+const videosSettled = () => FILMS.every(f => (!f.el || f.live || f.failed) && !f.posterWait);
 
 function startOpener() {
   let take = 1;                                                /* the take number counts your visits */
@@ -1536,6 +1573,7 @@ window.addEventListener("hashchange", () => {            /* links like #hajj, an
 
 async function boot() {
   applyLang();
+  loadPosters();
   loadVideos();                                          /* ask for the film files straight away; the slate waits for the answers */
   (function () { grain.width = grain.height = 160; const g = grain.getContext("2d"), d = g.createImageData(160, 160); for (let p = 0; p < d.data.length; p += 4) { const n = (Math.random() * 255) | 0; d.data[p] = d.data[p + 1] = d.data[p + 2] = n; d.data[p + 3] = 255; } g.putImageData(d, 0, 0); })();
   try {
