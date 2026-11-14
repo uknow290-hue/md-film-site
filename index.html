@@ -131,6 +131,12 @@ html[lang="ar"] .fhead h2 { line-height: 1.25; font-weight: 600; }
 .fhead p { margin: 0; flex: 1 1 44%; color: var(--ash); max-width: 34em; }
 .list { position: absolute; inset-inline-start: calc(var(--mx) + var(--g)); top: var(--ft); width: calc(var(--fl) - var(--mx) - var(--g) * 4); margin: 0; padding: 0; list-style: none; }
 .list li { margin-bottom: .95em; }
+/* a long list stays as tall as the film frame: it scrolls, follows the current film, and fades at the cut edges */
+.list { max-height: var(--fh); overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.list::-webkit-scrollbar { display: none; }
+.list.cut-t { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.6em); mask-image: linear-gradient(to bottom, transparent, #000 2.6em); }
+.list.cut-b { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6em), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6em), transparent); }
+.list.cut-t.cut-b { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.6em, #000 calc(100% - 2.6em), transparent); mask-image: linear-gradient(to bottom, transparent, #000 2.6em, #000 calc(100% - 2.6em), transparent); }
 .list button { font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: start; }
 .list button.on { color: var(--ink); font-weight: 500; }
 .side { position: absolute; inset-inline-start: calc(var(--fl) + var(--fw) + var(--g) * 2); inset-inline-end: calc(var(--mx) + var(--g)); top: var(--ft); height: var(--fh); display: flex; flex-direction: column; justify-content: space-between; }
@@ -314,7 +320,7 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
       <nav class="mono"><button class="blink" data-open="studio" data-t="lStudio" data-s>Studio</button><button class="blink" data-open="process" data-t="lProcess" data-s>Process</button></nav>
     </div>
     <dl class="stats">
-      <div><dt>08</dt><dd class="mono" data-t="s1" data-s>Films &amp; projects</dd></div>
+      <div><dt id="sFilms">08</dt><dd class="mono" data-t="s1" data-s>Films &amp; projects</dd></div>
       <div><dt>08</dt><dd class="mono" data-t="s2" data-s>Sectors we film for</dd></div>
       <div><dt>05</dt><dd class="mono" data-t="s3" data-s>Stages in every project</dd></div>
     </dl>
@@ -438,6 +444,9 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
    To use a real video, put the file at the `video` path (MP4, H.264,
    ideally 16:9, 6–15 s loop, no sound needed for the tile). If the file
    is missing, the tile shows a picture drawn in code instead.
+   Up to 31 films fit (one per floating tile). A new entry needs only
+   `slug`, `en` and `ar`; add `yt` (a YouTube link or id) to show that
+   video in the player and its thumbnail on the tile.
    ===================================================================== */
 const FILMS = [
   { slug: "hajj", video: "videos/hajj.mp4", scene: "mountains", seed: 5,
@@ -522,6 +531,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const pad2 = n => String(n).padStart(2, "0");
 const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const COARSE = matchMedia("(pointer: coarse)").matches;
+if (FILMS.length > 31) FILMS.length = 31;      /* the field has 31 film tiles */
 const N = FILMS.length;
 
 const el = {
@@ -546,6 +556,7 @@ function setText(node, text) { node._text = text; node.textContent = text; }
 function applyLang() {
   root.lang = lang; root.dir = lang === "ar" ? "rtl" : "ltr";
   document.title = tr("title");
+  $("#sFilms").textContent = pad2(N);                    /* the "films & projects" figure follows the list */
   $$("[data-t]").forEach(n => { let k = n.dataset.t; if (k === "hint" && COARSE) k = "hintTouch"; const v = tr(k); if (v != null) { cancelAnimationFrame(n._raf); setText(n, v); } });
   $$("[data-ta]").forEach(n => { const v = tr(n.dataset.ta); if (v) n.setAttribute("aria-label", v); });
   el.langBtn.textContent = lang === "ar" ? "EN" : "ع";
@@ -781,8 +792,18 @@ const MOTION = {
 };
 const PARTICLES = { mountains: 36, dunes: 44, city: 70, stadium: 60, stage: 30, strings: 0, embers: 80, bars: 0 };
 
+/* forgiving defaults, so a hand-written entry needs only a slug and its two texts */
+FILMS.forEach((f, i) => {
+  if (!f.slug) f.slug = "film-" + (i + 1);
+  if (f.yt) { const m = String(f.yt).match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/); if (m) f.yt = m[1]; }
+  if (!SCENES[f.scene]) { f.scene = ["city", "stage", "embers", "bars", "strings"][i % 5]; f.o = {}; }
+  if (!f.o) f.o = {};
+  if (f.seed == null) f.seed = 11 + i * 17;
+  f.en = f.en || f.ar || { title: f.slug, kind: "", desc: "" }; f.ar = f.ar || f.en;
+});
+
 let CW = 960, CH = 540;                  /* one atlas cell */
-const COLS = 3, ROWS = Math.ceil(N / COLS);
+const COLS = Math.max(3, Math.ceil(Math.sqrt(N * 9 / 16))), ROWS = Math.ceil(N / COLS);   /* keeps the atlas roughly square */
 const grain = document.createElement("canvas");
 function buildStill(f) {
   const cv = document.createElement("canvas"); cv.width = CW; cv.height = CH; const c = cv.getContext("2d");
@@ -798,7 +819,7 @@ function buildStill(f) {
 /* draw film i into a CW×CH area of context c */
 function paintFilm(c, i, t) {
   const f = FILMS[i];
-  if (f.el && !f.live && !f.failed) { c.fillStyle = "#1b1b1f"; c.fillRect(0, 0, CW, CH); return; }   /* its video is still loading: a blank slate */
+  if ((f.el && !f.live && !f.failed) || (f.posterWait && !f.live)) { c.fillStyle = "#1b1b1f"; c.fillRect(0, 0, CW, CH); return; }   /* its video or poster is still loading: a blank slate */
   if (f.live) {
     const v = f.el, va = v.videoWidth / v.videoHeight, ca = CW / CH;
     let sw = v.videoWidth, sh = v.videoHeight, sx = 0, sy = 0;
@@ -806,6 +827,7 @@ function paintFilm(c, i, t) {
     c.drawImage(v, sx, sy, sw, sh, 0, 0, CW, CH); return;
   }
   if (f.photo) { c.drawImage(f.photo, 0, 0); return; }                 /* a poster image (e.g. the YouTube thumbnail) */
+  if (!f.still) buildStill(f);                                          /* drawn only for films that need it */
   c.drawImage(f.still, 0, 0);
   c.save(); c.globalCompositeOperation = "lighter"; MOTION[f.scene](c, CW, CH, t + i * 7.3, f.o, f.parts); c.restore();
 }
@@ -817,7 +839,7 @@ function loadPosters() {
     f.posterWait = true;
     const next = () => {
       const u = urls.shift();
-      if (!u) { f.posterWait = false; return; }
+      if (!u) { f.posterWait = false; dirty = 3; return; }
       const im = new Image(); im.crossOrigin = "anonymous";
       im.onerror = next;
       im.onload = () => {
@@ -829,7 +851,7 @@ function loadPosters() {
         c.drawImage(im, sx, sy, sw, sh, 0, 0, CW, CH);
         const v = c.createRadialGradient(CW / 2, CH / 2, CH * .45, CW / 2, CH / 2, CW * .75);
         v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)"); c.fillStyle = v; c.fillRect(0, 0, CW, CH);
-        f.photo = cv; f.posterWait = false; dirty = 3;
+        f.photo = cv; f.photoUp = false; f.posterWait = false; dirty = 3;
       };
       im.src = u;
     };
@@ -977,7 +999,8 @@ function initGL() {
     return t;
   };
   const maxTex = gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096;
-  if (COARSE || innerWidth < 760 || COLS * CW > maxTex || ROWS * CH > maxTex) { CW = 640; CH = 360; }
+  if (COARSE || innerWidth < 760 || COLS * CW > maxTex || ROWS * CH > maxTex || COLS * CW * ROWS * CH > 12e6) { CW = 640; CH = 360; }
+  if (COLS * CW > maxTex || ROWS * CH > maxTex || (COARSE && N > 16)) { CW = 480; CH = 270; }
   texAtlas = tex(0); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, COLS * CW, ROWS * CH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
   texMark = tex(1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
   gl.uniform1i(U.uAtlas, 0); gl.uniform1i(U.uMark, 1); gl.uniform2f(U.uGrid, COLS, ROWS);
@@ -986,13 +1009,15 @@ function initGL() {
   newScratch();
   return true;
 }
-function uploadCell(i, t) {
-  const f = FILMS[i];
+function uploadCell(i, t, force) {
+  const f = FILMS[i], fixed = !!f.photo && !f.live;
   if (f.live && f.el.readyState < 2) return;
+  if (fixed && f.photoUp && !force) return;                            /* a poster never changes: upload it once */
   try {
     paintFilm(sctx, i, t);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texAtlas);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, (i % COLS) * CW, Math.floor(i / COLS) * CH, gl.RGBA, gl.UNSIGNED_BYTE, scratch);
+    f.photoUp = fixed;
   } catch (e) {
     if (f.live) { f.live = false; f.failed = true; newScratch(); }     /* e.g. a cross-origin video: fall back to the still */
     else if (f.photo) { f.photo = null; newScratch(); }                /* a poster the browser may not read: back to the drawn still */
@@ -1048,6 +1073,8 @@ function buildTiles() {
     t.foc = 0; t.hov = 0; t.zf = 0; t.roll = 0; t.tx = 0; t.ty = 0; t.px = t.cx; t.py = t.cy;
     return t;
   };
+  const count = new Array(N).fill(0), gcd = (x, y) => (y ? gcd(y, x % y) : x);
+  let last = 0, stride = Math.max(1, Math.round(N * .382)); while (gcd(stride, N) > 1) stride++;
   for (let v = 0; v < 8; v++) for (let p = 0; p < 8; p++) {
     if ((p + v) % 2) continue;                                   /* checkerboard: every other cell */
     if (p === 0 && v === 0) { tiles.push(adrift({ id: "home", kind: "home", cx: 0, cy: 0, w: G.hw, h: G.hh, film: -1 }, p, v)); continue; }
@@ -1055,6 +1082,12 @@ function buildTiles() {
     let f = ((((a + 3 * b + 2) % 8) + 8) % 8) % N;               /* no film sits next to itself */
     const used = near.map(q => grid.get(key(p + q[0], v + q[1])));
     for (let k = 0; k < N && used.indexOf(f) >= 0; k++) f = (f + 1) % N;
+    if (N > 8) {                                                 /* more films than the pattern knows: share the 31 tiles evenly, shown least first */
+      let best = -1;
+      for (let k = 1; k <= N; k++) { const c = (last + k * stride) % N; if (used.indexOf(c) < 0 && (best < 0 || count[c] < count[best])) best = c; }
+      if (best >= 0) f = best;
+      last = f; count[f]++;
+    }
     grid.set(key(p, v), f);
     tiles.push(adrift({ id: p + "-" + v, kind: "film", cx: p * G.hx + hash(p, v, 1) * jx, cy: v * G.hy + hash(p, v, 2) * jy, w: G.fw, h: G.fh, film: f }, p, v));
   }
@@ -1165,6 +1198,7 @@ function hit(x, y) {                       /* undo exactly what the shader does:
 
 window.addEventListener("wheel", e => {
   if (e.target.closest && e.target.closest(".sheet, .menu, .theater")) return;
+  if (e.target.closest && e.target.closest(".list") && el.list.scrollHeight > el.list.clientHeight + 2) return;   /* a long film list scrolls by itself */
   e.preventDefault();
   if (op) { finishOpener(performance.now(), true); return; }
   if (overlay || !G) return;
@@ -1262,7 +1296,16 @@ function buildList() {
   });
   markList();
 }
-function markList() { const on = active && active.kind === "film" ? active.film : -1; $$("button", el.list).forEach((b, i) => { b.classList.toggle("on", i === on); if (i === on) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); }); }
+function listEdges() { const l = el.list; l.classList.toggle("cut-t", l.scrollTop > 2); l.classList.toggle("cut-b", l.scrollTop + l.clientHeight < l.scrollHeight - 2); }
+function markList() {
+  const on = active && active.kind === "film" ? active.film : -1, l = el.list;
+  $$("button", l).forEach((b, i) => { b.classList.toggle("on", i === on); if (i === on) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
+  const li = on >= 0 ? l.children[on] : null;
+  if (li && l.scrollHeight > l.clientHeight + 2) { const top = li.offsetTop - (l.clientHeight - li.offsetHeight) / 2; try { l.scrollTo({ top, behavior: REDUCE ? "auto" : "smooth" }); } catch (e) { l.scrollTop = top; } }
+  listEdges();
+}
+el.list.addEventListener("scroll", listEdges, { passive: true });
+window.addEventListener("resize", () => requestAnimationFrame(listEdges));
 function fillFilm() {
   if (!active || active.kind !== "film") return;
   const L = FILMS[active.film][lang];
@@ -1546,7 +1589,7 @@ function frame(now) {
   }
   if (now - lastAtlas > 33) {
     lastAtlas = now;
-    if (op || dirty > 0) { for (let i = 0; i < N; i++) uploadCell(i, t); if (dirty > 0) dirty--; }
+    if (op || dirty > 0) { for (let i = 0; i < N; i++) uploadCell(i, t, dirty > 0); if (dirty > 0) dirty--; }
     else vis.forEach(i => uploadCell(i, t));
   }
   if (frameN % 20 === 0) FILMS.forEach((f, i) => { if (!f.el || !f.live) return; if (op || vis.has(i)) { if (f.el.paused) f.el.play().catch(() => {}); } else if (!f.el.paused) f.el.pause(); });
@@ -1585,10 +1628,10 @@ async function boot() {
   let ok = false;
   try { ok = initGL(); } catch (e) { ok = false; gl = null; }
   if (!ok) root.classList.add("nogl");
-  FILMS.forEach(buildStill);
+  FILMS.forEach(f => { if (!f.yt && !f.poster) buildStill(f); });
   while (!window.innerWidth || !window.innerHeight) await new Promise(r => setTimeout(r, 120));   /* opened in a hidden tab */
   layout();
-  if (gl) FILMS.forEach((f, i) => uploadCell(i, 0));
+  if (gl) FILMS.forEach((f, i) => uploadCell(i, 0, true));
 
   const slug = decodeURIComponent(location.hash.replace("#", "")), fi = FILMS.findIndex(f => f.slug === slug);
   if (fi >= 0) {                                         /* a direct link to a film: no opening, straight there */
