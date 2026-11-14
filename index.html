@@ -230,8 +230,6 @@ html[lang="ar"] .th-meta h3 { letter-spacing: 0; line-height: 1.3; }
 .stick { position: relative; display: block; height: 2.2em; border: 2px solid var(--ink); background: repeating-linear-gradient(115deg, var(--ink) 0 1.6em, var(--bg) 1.6em 3.2em); }
 .stick.top { background: repeating-linear-gradient(65deg, var(--ink) 0 1.6em, var(--bg) 1.6em 3.2em); transform-origin: .3em 100%; transform: rotate(-26deg); margin-bottom: -2px; }
 .op.play .stick.top { animation: lift .55s ease-out both; }
-.op.play:not(.go) .stick.top { animation: lift .55s ease-out both, nod 2.2s ease-in-out .9s infinite; }   /* waiting for the tap */
-@keyframes nod { 0%, 100% { transform: rotate(-26deg); } 50% { transform: rotate(-20deg); } }
 @keyframes lift { from { transform: rotate(-14deg); } to { transform: rotate(-26deg); } }
 .op.clap .stick.top { animation: clap .15s cubic-bezier(.7, 0, 1, .55) forwards; }
 @keyframes clap { from { transform: rotate(-26deg); } to { transform: rotate(0); } }
@@ -268,10 +266,6 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
 .op-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .op-skip { position: absolute; left: 50%; bottom: calc(var(--my) + var(--g) * .7); transform: translateX(-50%); padding: .7em 1.1em; color: var(--stone); transition: color .2s; }
 .op-skip:hover { color: var(--ink); }
-.op-go { position: absolute; left: 50%; top: 100%; margin-top: 20px; transform: translateX(-50%); padding: .9em 1.3em; color: var(--ink); white-space: nowrap; opacity: 0; font-size: max(12px, var(--fs-meta)); }
-.op.play .op-go { animation: ask 1.7s ease-in-out .5s infinite both; }
-@keyframes ask { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
-.op.go .op-go, .op.cuts .op-go, .op.out .op-go { display: none; }
 .op.out .op-skip { display: none; }
 
 /* ---------- no-WebGL fallback ---------- */
@@ -426,7 +420,7 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
 <!-- opening: a clapperboard claps, the frame flashes, a burst of fast cuts, then the field -->
 <div class="op" id="op">
   <div class="op-bg"></div>
-  <div class="slate"><div class="slate-in" aria-hidden="true">
+  <div class="slate" aria-hidden="true"><div class="slate-in">
     <i class="stick top"></i><i class="stick"></i>
     <div class="sbody">
       <div class="srow"><div class="scell big"><small data-t="slProd">Prod.</small><b><svg class="lg" viewBox="0 0 698 136" aria-hidden="true"><use href="#lg"/></svg></b></div></div>
@@ -440,7 +434,7 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
         <div class="scell"><small>FPS</small><b>24</b></div>
       </div>
     </div>
-  </div><button class="op-go mono" id="opGo" data-t="tap">Click to start</button></div>
+  </div></div>
   <i class="op-scr" id="opS1"></i><i class="op-scr" id="opS2"></i>
   <div class="op-vf" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
   <div class="op-bar t mono" aria-hidden="true"><span class="l"><i class="rec"></i><span>REC</span><span id="opClip" dir="ltr">A001_C001</span></span><span id="opTc" dir="ltr">00:00:00:00</span></div>
@@ -516,7 +510,7 @@ const T = {
     ctLede: "Send the brief, the deadline and where the film will be shown. We reply with a treatment and a quote.",
     copy: "Copy address", copied: "Copied",
     home: "MD-film — home", menu: "Menu", prev: "Previous film", next: "Next film",
-    skip: "Skip", tap: "Click to start", tapTouch: "Tap to start", slProd: "Prod.", slRoll: "Roll", slScene: "Scene", slTake: "Take", slDate: "Date"
+    skip: "Skip", slProd: "Prod.", slRoll: "Roll", slScene: "Scene", slTake: "Take", slDate: "Date"
   },
   ar: {
     title: "MD-film — استوديو إنتاج أفلام",
@@ -534,7 +528,7 @@ const T = {
     ctLede: "أرسل لنا موجز المشروع والموعد النهائي ومكان عرض الفيلم، وسنرد عليك بمعالجة وعرض سعر.",
     copy: "نسخ العنوان", copied: "تم النسخ",
     home: "MD-film — الرئيسية", menu: "القائمة", prev: "الفيلم السابق", next: "الفيلم التالي",
-    skip: "تخطي", tap: "انقر للبدء", tapTouch: "اضغط للبدء", slProd: "الإنتاج", slRoll: "بكرة", slScene: "مشهد", slTake: "لقطة", slDate: "التاريخ"
+    skip: "تخطي", slProd: "الإنتاج", slRoll: "بكرة", slScene: "مشهد", slTake: "لقطة", slDate: "التاريخ"
   }
 };
 const EMAIL = "hello@md-film.com";
@@ -573,7 +567,7 @@ function applyLang() {
   root.lang = lang; root.dir = lang === "ar" ? "rtl" : "ltr";
   document.title = tr("title");
   $("#sFilms").textContent = pad2(N);                    /* the "films & projects" figure follows the list */
-  $$("[data-t]").forEach(n => { let k = n.dataset.t; if ((k === "hint" || k === "tap") && COARSE) k += "Touch"; const v = tr(k); if (v != null) { cancelAnimationFrame(n._raf); setText(n, v); } });
+  $$("[data-t]").forEach(n => { let k = n.dataset.t; if (k === "hint" && COARSE) k = "hintTouch"; const v = tr(k); if (v != null) { cancelAnimationFrame(n._raf); setText(n, v); } });
   $$("[data-ta]").forEach(n => { const v = tr(n.dataset.ta); if (v) n.setAttribute("aria-label", v); });
   el.langBtn.textContent = lang === "ar" ? "EN" : "ع";
   el.langBtn.setAttribute("aria-label", lang === "ar" ? "English" : "العربية");
@@ -1290,10 +1284,10 @@ window.addEventListener("pointermove", e => {
 document.addEventListener("mouseleave", () => { ptrN.x = ptrN.y = 0; });
 
 window.addEventListener("keydown", e => {
-  if (op) {                                                    /* opening: Enter or Space starts it, Escape skips it */
+  if (op) {                                                    /* opening: Escape skips it; Enter or Space switch its sound on */
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === "Escape") finishOpener(performance.now(), true);
-    else if ((e.key === "Enter" || e.key === " ") && !(e.target.closest && e.target.closest("#opSkip"))) { e.preventDefault(); goOpener(); }
+    else if ((e.key === "Enter" || e.key === " ") && !(e.target.closest && e.target.closest("#opSkip"))) { e.preventDefault(); sfx.unlock(); }
     return;
   }
   if (e.key === "Escape") { if (overlay & 4) closeTheater(); else if (overlay & 1) closeMenu(); else if (overlay & 2) closeSheet(); return; }
@@ -1403,13 +1397,13 @@ el.copyBtn.addEventListener("click", () => {
 
 /* =====================================================================
    OPENING SOUND — every sound is made in code (Web Audio): no audio files.
-   Nothing plays until unlock() runs inside a tap or click.
+   A sound is played only while the browser has let the audio run.
    ===================================================================== */
 const sfx = (() => {
   let ac = null, out = null, nbuf = null, done = 0;
-  const safe = fn => (...a) => { if (!ac) return; try { fn(ac.currentTime + .005, ...a); } catch (e) {} };
+  const safe = fn => (...a) => { if (!ac || ac.state !== "running") return; try { fn(ac.currentTime + .005, ...a); } catch (e) {} };
   function unlock() {
-    if (ac) return;
+    if (ac) { if (ac.state === "suspended") { try { ac.resume(); } catch (e) {} } return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
       ac = new AC();
@@ -1442,7 +1436,6 @@ const sfx = (() => {
   function close(after) { const a = ac, id = ++done; setTimeout(() => { if (id === done && a) { try { a.close(); } catch (e) {} if (ac === a) ac = null; } }, after); }
   return {
     unlock,
-    tap: safe(t => { tone(t, .06, "sine", 880, 620, .26); noise(t, .03, "highpass", 4000, 4000, .7, .13); }),
     clap: safe(t => {                                            /* two pieces of wood meeting, and the room answering */
       noise(t, .1, "bandpass", 2300, 1300, 1.1, 1.6);
       noise(t, .03, "highpass", 5200, 5200, .7, .9);
@@ -1462,21 +1455,29 @@ const sfx = (() => {
       if (s.leak) tone(t, .11, "sine", 300, 620, .1, .02);
       if (s.film < 0) tone(t, .09, "triangle", 392, 392, .08, .01);
     }),
-    land: safe(t => {                                            /* the field sweeps in: a low hit, and air falling away */
-      tone(t, 1.4, "sine", 96, 31, .8, .006);
-      tone(t, .5, "triangle", 185, 60, .26, .005);
-      noise(t, 1.5, "lowpass", 7000, 240, .8, .42, .02);
-      noise(t + .05, 2.3, "bandpass", 1300, 380, .5, .1, .3);
+    land() {                                                     /* the field sweeps in: a low hit, and air falling away */
+      if (!ac) return;
+      safe(t => {
+        tone(t, 1.4, "sine", 96, 31, .8, .006);
+        tone(t, .5, "triangle", 185, 60, .26, .005);
+        noise(t, 1.5, "lowpass", 7000, 240, .8, .42, .02);
+        noise(t + .05, 2.3, "bandpass", 1300, 380, .5, .1, .3);
+      })();
       close(3200);
-    }),
-    stop: safe(t => { out.gain.cancelScheduledValues(t); out.gain.setValueAtTime(out.gain.value, t); out.gain.linearRampToValueAtTime(0, t + .08); close(300); })
+    },
+    stop() {
+      if (!ac) return;
+      safe(t => { out.gain.cancelScheduledValues(t); out.gain.setValueAtTime(out.gain.value, t); out.gain.linearRampToValueAtTime(0, t + .08); })();
+      close(300);
+    }
   };
 })();
 
 /* =====================================================================
-   OPENING — the slate waits for a tap (a browser lets a page make sound only
-   after one), claps, the frame flashes, a burst of fast cuts runs through the
-   films, then the field sweeps in
+   OPENING — the slate holds while the film files answer, claps, the frame
+   flashes, a burst of fast cuts runs through the films, then the field sweeps in.
+   It starts by itself. Its sound plays only where the browser allows a page to
+   make sound without a tap; a tap or click during the opening switches it on.
    ===================================================================== */
 const fl = { on: false, t0: 0, dur: 1, peak: 0 };
 function flash(now, peak, dur, color) { fl.on = true; fl.t0 = now; fl.dur = dur; fl.peak = peak; el.opFlash.style.background = color || "#fff"; }
@@ -1496,6 +1497,7 @@ function startOpener() {
   $("#slDateV").textContent = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear();
   op = { t0: -1, st: 0, tc: 0, hit: false, shots: [], k: -1, c0: 0, total: 0, cur: { x: 0, y: 0, zoom: 1, rot: 0, inv: 0, leak: 0, side: 0 } };
   root.classList.add("opening");
+  sfx.unlock();                                                /* allowed without a tap only in some browsers; otherwise it stays silent */
 }
 function buildShots() {
   if (!gl) return [];
@@ -1540,7 +1542,7 @@ function runOpener(now) {                                      /* returns the cu
   if (op.t0 < 0) { op.t0 = now; el.op.classList.add("play"); }
   const t = now - op.t0;
   if (op.st === 0) {                                           /* slate up, sticks open */
-    if (op.go && t >= 300) { op.st = 1; op.tc = t; el.op.classList.add("clap"); }
+    if (t >= 640 && (videosSettled() || t > 2800)) { op.st = 1; op.tc = t; el.op.classList.add("clap"); }
     return null;
   }
   if (op.st === 1) {                                           /* clap, flash, hold a beat */
@@ -1572,11 +1574,10 @@ function finishOpener(now, skipped) {
   if (gl && !skipped) intro = { t0: -1, dur: 1700, dx: 3.1 * G.hx, dy: -2.3 * G.hy };
   else { cam.x = tgt.x = camPrev.x = homeTile.cx; cam.y = tgt.y = camPrev.y = homeTile.cy + G.sh; zoomI = .84; }
 }
-function goOpener() { if (!op || op.go) return; op.go = true; el.op.classList.add("go"); sfx.unlock(); sfx.tap(); }
 el.op.addEventListener("click", e => {
   if (!op) return;
-  if (e.target.closest("#opSkip")) finishOpener(performance.now(), true);   /* only Skip skips; a tap anywhere else starts */
-  else goOpener();
+  if (e.target.closest("#opSkip")) finishOpener(performance.now(), true);   /* only Skip skips; a tap anywhere else switches the sound on */
+  else sfx.unlock();
 });
 
 /* =====================================================================
