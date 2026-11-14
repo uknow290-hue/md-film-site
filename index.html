@@ -21,7 +21,7 @@
 /* MD-film — one-screen site.
    A WebGL field of film tiles floats behind the interface: scroll, drag or use the arrow keys to
    travel through it. It snaps to the nearest film, and the interface re-draws itself around it.
-   Brand: Film Black #0B0B0B, Paper #F2EEE6, REC Red #E8382C (the logo's dot only).
+   Brand: Film Black #0B0B0B, Paper #F2EEE6, REC Red #E8382C (the logo's dot and the REC lights).
    Type: Jost (Latin), Readex Pro (Arabic). */
 :root {
   color-scheme: dark;
@@ -109,7 +109,7 @@ html[lang="ar"] .talk { letter-spacing: 0; }
 .bottom a:hover { color: var(--ink); }
 .hint { position: absolute; left: 50%; transform: translateX(-50%); color: var(--ash); white-space: nowrap; }
 .tc { display: inline-flex; align-items: center; direction: ltr; }
-.rec { width: .62em; height: .62em; border-radius: 50%; background: var(--ink); margin-right: .75em; animation: rec 1.6s steps(1) infinite; }
+.rec { width: .62em; height: .62em; border-radius: 50%; background: var(--rec); margin-right: .75em; animation: rec 1.6s steps(1) infinite; }
 @keyframes rec { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
 
 .layer { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .2s linear, visibility 0s .2s; }
