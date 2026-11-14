@@ -168,7 +168,7 @@ html[dir="rtl"] .view svg, html[dir="rtl"] .chip svg, html[dir="rtl"] .pager but
 .x { color: var(--ash); padding: .8em 0; } .x:hover { color: var(--ink); }
 .menu nav { display: flex; flex-direction: column; align-items: flex-start; }
 .menu nav button { display: flex; align-items: flex-start; gap: .28em; font-size: clamp(42px, 7.4vw, 124px); font-weight: 500; letter-spacing: -.045em; line-height: 1.04; transition: opacity .25s; }
-html[lang="ar"] .menu nav button { line-height: 1.3; font-weight: 600; }
+html[lang="ar"] .menu nav button { font-size: clamp(27px, 4.8vw, 81px); line-height: 1.3; font-weight: 600; }   /* Arabic sets larger: 65% of the Latin size */
 .menu nav button .mono { color: var(--stone); padding-top: 1.1em; }
 @media (hover: hover) { .menu nav:hover button:not(:hover) { opacity: .28; } }
 .menu.open nav button { animation: rise .7s var(--ease) both; animation-delay: calc(var(--i) * 55ms + 60ms); }
