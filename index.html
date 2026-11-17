@@ -87,13 +87,13 @@ html[lang="ar"] .bottom .left, html[lang="ar"] .tc, html[lang="ar"] [dir="ltr"] 
 .ready .ui { opacity: 1; }
 .ui a, .ui button { pointer-events: auto; }
 
-.top { position: absolute; top: var(--my); inset-inline: calc(var(--mx) + var(--g)); height: calc(var(--g) * 3); min-height: 44px; display: flex; align-items: center; justify-content: space-between; }
+.top { position: absolute; z-index: 3; top: var(--my); inset-inline: calc(var(--mx) + var(--g)); height: calc(var(--g) * 3); min-height: 44px; display: flex; align-items: center; justify-content: space-between; }
 .mark { width: 2.1em; height: 2.1em; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-size: var(--fs-nav); }
 .mark svg { display: block; width: 58%; height: auto; margin-left: 2%; }
 .lg { display: block; height: 1em; width: 5.132em; }                 /* the logo: sized by font-size, coloured by color */
 .wm .lg, .bar2 .lg { font-size: calc(var(--fs-nav) * 1.1); color: var(--ink); }
 .wm { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-weight: 700; font-size: var(--fs-nav); letter-spacing: -.04em; line-height: 1; opacity: 0; visibility: hidden; transition: opacity .4s, visibility 0s .4s; }
-.is-film .wm { opacity: 1; visibility: visible; transition: opacity .4s .3s; }
+.is-film .wm, .is-page .wm { opacity: 1; visibility: visible; transition: opacity .4s .3s; }
 .acts { display: flex; align-items: center; gap: calc(var(--g) * 1.25); }
 .talk { font-size: var(--fs-nav); font-weight: 500; letter-spacing: -.02em; }
 html[lang="ar"] .talk { letter-spacing: 0; }
@@ -161,8 +161,70 @@ html[dir="rtl"] .view svg, html[dir="rtl"] .chip svg, html[dir="rtl"] .pager but
 .chip.on { opacity: 1; }
 .chip svg { width: .7em; height: .7em; fill: currentColor; }
 
+/* ---------- film page: opens over the field when a film is chosen ---------- */
+.fpage { --pm: calc(var(--col) * 3 + var(--g) * 2); --ph: calc(var(--my) + max(44px, var(--g) * 3));
+  position: absolute; inset: 0; z-index: 1; background: var(--bg); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; outline: 0;
+  pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; scrollbar-width: none; user-select: text; -webkit-user-select: text; }
+.fpage.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .35s; }
+.fpage::-webkit-scrollbar { display: none; }   /* no scrollbar, so the page lines up with the header above it */
+.fp-shade { position: absolute; top: 0; inset-inline: 0; height: calc(var(--my) + max(44px, var(--g) * 3) + var(--g)); z-index: 2; pointer-events: none; background: linear-gradient(var(--bg) 55%, rgba(11, 11, 11, 0)); opacity: 0; transition: opacity .3s; }
+.is-page .fp-shade { opacity: 1; }
+.is-page .layer, .is-page .bottom { visibility: hidden; transition: visibility 0s .35s; }
+.fp-in { position: relative; min-height: 100%; display: flex; flex-direction: column; padding: calc(var(--ph) + var(--g) * 1.2) calc(var(--mx) + var(--g)) 0; }
+.fp-in::before, .fp-in::after { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); z-index: 0; pointer-events: none; }
+.fp-in::before { inset-inline-start: var(--mx); }
+.fp-in::after { inset-inline-end: calc(var(--mx) + var(--g) * 2 + var(--pm)); }
+.fp-in > * { position: relative; z-index: 1; flex: none; }
+.fp-in.go > * { animation: rise .7s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms + 60ms); }
+.fp-bar { display: flex; align-items: center; justify-content: space-between; padding-bottom: calc(var(--g) * .9); color: var(--stone); }
+.fp-bar button { display: inline-flex; align-items: center; gap: .7em; padding: .7em 0; letter-spacing: inherit; text-transform: inherit; color: var(--ash); transition: color .2s; }
+.fp-bar button:hover { color: var(--ink); }
+.fp-bar .ar, .fp-next .ar { display: inline-block; }
+html[dir="rtl"] .fp-bar .ar, html[dir="rtl"] .fp-next .ar, html[dir="rtl"] .fp-play svg { transform: scaleX(-1); }
+.fp-rule { display: block; height: 1px; background: var(--line); margin-inline: calc((var(--mx) + var(--g)) * -1); }
+.fp-rule::before { content: ""; position: absolute; top: -3px; inset-inline-start: calc(var(--mx) - 3px); width: 7px; height: 7px; border-radius: 50%; background: #55544f; }
+.fp-head { display: grid; grid-template-columns: minmax(0, 1fr) var(--pm); column-gap: calc(var(--g) * 2); align-items: end; padding-block: calc(var(--g) * 2.4) calc(var(--g) * 2); }
+.fp-head h2 { margin: 0 0 .3em; font-size: clamp(44px, 7vw, 118px); font-weight: 500; letter-spacing: -.035em; line-height: .95; }
+html[lang="ar"] .fp-head h2 { font-size: clamp(32px, 4.6vw, 78px); font-weight: 600; line-height: 1.3; margin-bottom: .32em; }
+.fp-head p { margin: 0; max-width: 34em; color: var(--ash); }
+.fp-meta { margin: 0; display: grid; gap: .6em; padding-bottom: .25em; }
+.fp-meta div { display: flex; gap: .8em; }
+.fp-meta dt { color: var(--stone); }
+.fp-meta dd { margin: 0; }
+.fp-frame { aspect-ratio: 2.39 / 1; max-height: 66vh; background: #050505; overflow: hidden; }
+.fp-frame canvas, .fp-frame img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+.fp-frame img { animation: drift 28s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: scale(1); } to { transform: scale(1.06); } }
+.fp-frame.can { cursor: pointer; }
+.fp-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: .6em; padding: .8em 1.05em; background: var(--ink); color: var(--bg); white-space: nowrap; transition: transform .25s var(--ease); }
+.fp-frame.can .fp-play { display: inline-flex; }
+.fp-frame.can:hover .fp-play { transform: translate(-50%, -50%) scale(1.07); }
+.fp-play svg { width: .7em; height: .7em; fill: currentColor; }
+.fp-frame + .fp-rule { margin-top: calc(var(--g) * 2.6); }
+.fp-body { display: grid; grid-template-columns: calc(var(--col) * 2 + var(--g)) minmax(0, 1fr); column-gap: var(--g); padding-block: calc(var(--g) * 2.6) calc(var(--g) * 6); }
+.fp-nav { position: sticky; top: calc(var(--ph) + var(--g) * 1.6); align-self: start; display: grid; gap: .8em; justify-items: start; color: var(--stone); }
+.fp-nav button { letter-spacing: inherit; text-transform: inherit; text-align: start; transition: color .2s; }
+.fp-nav button:hover, .fp-nav button.on { color: var(--ink); }
+.fp-text { min-width: 0; }
+.fp-lead { margin: 0 0 calc(var(--g) * 5.5); max-width: 21em; font-size: clamp(23px, 3vw, 50px); font-weight: 500; letter-spacing: -.022em; line-height: 1.2; text-wrap: balance; }
+html[lang="ar"] .fp-lead { font-size: clamp(20px, 2.3vw, 38px); letter-spacing: 0; line-height: 1.6; }
+.fp-sec { padding-bottom: calc(var(--g) * 4.5); }
+.fp-sec:last-child { padding-bottom: 0; }
+.fp-sec > .mono { display: none; margin-bottom: 1.1em; color: var(--stone); }
+.fp-sec h3 { margin: 0 0 .75em; max-width: 19em; font-size: clamp(21px, 2.4vw, 40px); font-weight: 500; letter-spacing: -.02em; line-height: 1.12; text-wrap: balance; }
+html[lang="ar"] .fp-sec h3 { font-size: clamp(19px, 1.9vw, 32px); font-weight: 600; letter-spacing: 0; line-height: 1.5; }
+.fp-sec p { margin: 0; max-width: 38em; color: var(--ash); line-height: 1.6; }
+.fp-sec p + p { margin-top: 1em; }
+html[lang="ar"] .fp-sec p { line-height: 1.9; }
+.fp-next { padding-block: calc(var(--g) * 2.2); }
+.fp-next button { display: inline-flex; align-items: baseline; gap: .8em; letter-spacing: inherit; text-transform: inherit; color: var(--stone); transition: color .2s; }
+.fp-next button b { font-weight: 500; color: var(--ink); }
+.fp-next button:hover { color: var(--ink); }
+.fp-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 1.8em; padding-block: calc(var(--g) * 3) calc(var(--my) + var(--g) * .8); color: var(--stone); }
+.fp-foot a:hover { color: var(--ink); }
+
 /* ---------- menu ---------- */
-.menu { position: fixed; inset: 0; z-index: 30; background: rgba(14, 14, 17, .97); display: flex; flex-direction: column; justify-content: space-between; padding: var(--my) calc(var(--mx) + var(--g)) calc(var(--my) + var(--g)); opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
+.menu { position: fixed; inset: 0; z-index: 30; background: rgba(11, 11, 11, .97); display: flex; flex-direction: column; justify-content: space-between; padding: var(--my) calc(var(--mx) + var(--g)) calc(var(--my) + var(--g)); opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
 .menu.open { opacity: 1; visibility: visible; transition: opacity .3s; }
 .bar2 { height: calc(var(--g) * 3); min-height: 44px; display: flex; align-items: center; justify-content: space-between; }
 .x { color: var(--ash); padding: .8em 0; } .x:hover { color: var(--ink); }
@@ -288,6 +350,26 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
   .side { inset-inline: calc(var(--mx) + var(--g)); top: auto; bottom: calc(var(--my) + var(--g) * 4.2); height: auto; flex-direction: row; align-items: flex-end; }
   .side .cta { display: flex; align-items: center; gap: 1.2em; }
   .view { font-size: 16px; }
+  .fpage { --pm: 0px; }
+  .fp-in::after { display: none; }
+  .fp-head { grid-template-columns: minmax(0, 1fr); row-gap: calc(var(--g) * 1.8); padding-block: calc(var(--g) * 2) calc(var(--g) * 1.8); }
+  .fp-head h2 { font-size: clamp(40px, 13vw, 62px); }
+  html[lang="ar"] .fp-head h2 { font-size: clamp(32px, 9.6vw, 46px); }
+  .fp-head p { font-size: 14px; }
+  html[lang="ar"] .fp-head p { font-size: 15px; }
+  .fp-meta { grid-template-columns: 1fr 1fr; gap: .7em 1.5em; }
+  .fp-frame { aspect-ratio: 16 / 9; max-height: none; }
+  .fp-body { grid-template-columns: minmax(0, 1fr); padding-block: calc(var(--g) * 2.4) calc(var(--g) * 4.5); }
+  .fp-nav { display: none; }
+  .fp-sec > .mono { display: block; }
+  .fp-lead { font-size: 23px; margin-bottom: calc(var(--g) * 4); }
+  html[lang="ar"] .fp-lead { font-size: 20px; }
+  .fp-sec { padding-bottom: calc(var(--g) * 3.6); }
+  .fp-sec h3 { font-size: 22px; }
+  html[lang="ar"] .fp-sec h3 { font-size: 20px; }
+  .fp-sec p { font-size: 14px; }
+  html[lang="ar"] .fp-sec p { font-size: 15px; }
+  .fp-foot { flex-direction: column; align-items: flex-start; gap: .7em; }
   .sheet { padding-inline: calc(var(--mx) + var(--g)); }
   .th-meta { flex-direction: column; gap: 1em; }
   .th-box { width: 100%; }
@@ -313,6 +395,29 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
 <div class="fb" aria-hidden="true"><svg class="lg" viewBox="0 0 698 136" aria-hidden="true"><use href="#lg"/></svg></div>
 
 <div class="ui" id="ui">
+  <article class="fpage" id="page" tabindex="-1" aria-labelledby="pTitle" inert>
+    <div class="fp-in" id="pIn">
+      <div class="fp-bar mono" style="--i:0"><button id="pBack"><span class="ar" aria-hidden="true">←</span><span data-t="pAll">All films</span></button><span id="pIdx" dir="ltr"></span></div>
+      <i class="fp-rule" style="--i:0"></i>
+      <header class="fp-head" style="--i:1">
+        <div><h2 id="pTitle" data-s></h2><p id="pDesc" data-s></p></div>
+        <dl class="fp-meta mono" id="pMeta"></dl>
+      </header>
+      <div class="fp-frame" id="pFrame" style="--i:2">
+        <canvas id="pCanvas" width="1280" height="720" aria-hidden="true"></canvas><img id="pImg" alt="" hidden>
+        <button class="fp-play mono" id="pPlay"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z"/></svg><span data-t="play">Play film</span></button>
+      </div>
+      <i class="fp-rule" id="pRule" style="--i:3"></i>
+      <div class="fp-body" id="pBody" style="--i:3">
+        <nav class="fp-nav mono" id="pNav" aria-label="Sections"></nav>
+        <div class="fp-text" id="pText"></div>
+      </div>
+      <i class="fp-rule" id="pNextRule" style="--i:4"></i>
+      <nav class="fp-next mono" id="pNextBox" style="--i:4"><button class="blink" id="pNext"></button></nav>
+      <footer class="fp-foot mono" style="--i:5"><span dir="ltr">© 2026 MD-film</span><a class="blink" href="mailto:hello@md-film.com">hello@md-film.com</a></footer>
+    </div>
+  </article>
+  <i class="fp-shade" aria-hidden="true"></i>
   <header class="top">
     <button class="mark" id="homeBtn" data-ta="home" aria-label="MD-film — home"><svg viewBox="0 0 220 136" aria-hidden="true"><use href="#lgi"/></svg></button>
     <button class="wm blink" id="wmBtn" data-ta="home" aria-label="MD-film — home"><svg class="lg" viewBox="0 0 698 136" aria-hidden="true"><use href="#lg"/></svg></button>
@@ -457,37 +562,141 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
    Up to 31 films fit (one per floating tile). A new entry needs only
    `slug`, `en` and `ar`; add `yt` (a YouTube link or id) to show that
    video in the player and its thumbnail on the tile.
+   Every film also has its own page (address: #/films/<slug>). The page
+   shows what the entry gives it and leaves out what is missing:
+     year, runtime            for example year: "2023", runtime: "02:44"
+     client, place, release   one text, or { en: "…", ar: "…" }
+     lead   (inside en / ar)  one or two opening sentences, set large
+     brief  (inside en / ar)  up to four sections, each { h: "Heading", p: "Text" }.
+                              They are named Idea, Story, Look, Craft unless a section sets k: "Name".
    ===================================================================== */
 const FILMS = [
   { slug: "hajj", video: "videos/hajj.mp4", scene: "mountains", seed: 5,
     o: { top: [28, 30, 52], bot: [232, 150, 90], sun: [255, 170, 90], sx: .68, sy: .5, disc: .05, far: [150, 96, 84], near: [14, 10, 14] },
-    en: { title: "Hajj", kind: "Cinematic film", desc: "A cinematic film on the journey of Hajj." },
-    ar: { title: "الحج", kind: "فيلم سينمائي", desc: "فيلم سينمائي عن رحلة الحج." } },
+    en: { title: "Hajj", kind: "Cinematic film", desc: "A cinematic film on the journey of Hajj.",
+      lead: "The journey of Hajj as the pilgrim lives it: the road in, the days of the rites, and the farewell.",
+      brief: [
+        { h: "Hajj from the inside", p: "Most footage of Hajj is news footage, filmed from a distance. This film stays close to one journey and moves at the pace of the people making it." },
+        { h: "From arrival to farewell", p: "The film follows the days in order and lets the places carry the story, so little needs to be said." },
+        { h: "Wide for scale, close for faces", p: "Wide frames show the size of the gathering. Close ones stay with single faces and hands, in the warm light of early morning and late afternoon." },
+        { h: "One team, start to finish", p: "Concept, filming, edit, grade and sound were handled by one team, and the film was finished in Arabic and English." } ] },
+    ar: { title: "الحج", kind: "فيلم سينمائي", desc: "فيلم سينمائي عن رحلة الحج.",
+      lead: "رحلة الحج كما يعيشها الحاج: طريق القدوم، وأيام المناسك، ثم الوداع.",
+      brief: [
+        { h: "الحج من الداخل", p: "أغلب ما يُصوَّر عن الحج لقطات إخبارية من بعيد. هذا الفيلم يبقى قريبًا من رحلة واحدة، ويسير بإيقاع من يعيشها." },
+        { h: "من القدوم إلى الوداع", p: "يتتبع الفيلم الأيام بترتيبها، ويترك للأماكن أن تروي الحكاية، فلا يحتاج إلا إلى القليل من الكلام." },
+        { h: "لقطات واسعة للمشهد وقريبة للوجوه", p: "اللقطات الواسعة تُظهر حجم الحشود، والقريبة تبقى مع الوجوه والأيدي، في الضوء الدافئ لأول النهار وآخره." },
+        { h: "فريق واحد من البداية إلى النهاية", p: "تولّى فريق واحد الفكرة والتصوير والمونتاج والتلوين والصوت، وصدر الفيلم بالعربية والإنجليزية." } ] } },
   { slug: "symposium", video: "videos/symposium.mp4", scene: "stage", seed: 13, o: {},
-    en: { title: "Symposium", kind: "Documentary", desc: "A documentary that follows a symposium, its speakers and its ideas." },
-    ar: { title: "الندوة", kind: "فيلم وثائقي", desc: "فيلم وثائقي يرافق الندوة ومتحدثيها وأفكارها." } },
+    en: { title: "Symposium", kind: "Documentary", desc: "A documentary that follows a symposium, its speakers and its ideas.",
+      lead: "A documentary that stays with a symposium from the first arrival to the last question, and keeps what was said in the room.",
+      brief: [
+        { h: "So the talks outlast the day", p: "A symposium ends when the hall empties. The film keeps its talks and its arguments available after the day itself." },
+        { h: "Built around the speakers", p: "Short interviews, moments from the stage and the conversations between sessions make up the film." },
+        { h: "Calm frames, the hall's own light", p: "Steady, unhurried shots and no added lighting, so attention stays on the people and what they say." },
+        { h: "Clear sound, clear subtitles", p: "Every speaker is recorded cleanly, the edit keeps the order of the ideas, and subtitles come in Arabic and English." } ] },
+    ar: { title: "الندوة", kind: "فيلم وثائقي", desc: "فيلم وثائقي يرافق الندوة ومتحدثيها وأفكارها.",
+      lead: "فيلم وثائقي يرافق الندوة من وصول أول الحضور إلى آخر سؤال، ويحفظ ما قيل في القاعة.",
+      brief: [
+        { h: "لتبقى الكلمات بعد انتهاء اليوم", p: "تنتهي الندوة حين تخلو القاعة. الفيلم يُبقي كلماتها ونقاشاتها متاحة بعد انتهاء يومها." },
+        { h: "المتحدثون محور الفيلم", p: "يتكوّن الفيلم من مقابلات قصيرة، ولحظات من المنصة، وأحاديث ما بين الجلسات." },
+        { h: "لقطات هادئة بضوء القاعة", p: "لقطات ثابتة غير متعجّلة ودون إضاءة مضافة، ليبقى التركيز على الناس وما يقولونه." },
+        { h: "صوت واضح وترجمة واضحة", p: "يُسجَّل صوت كل متحدث بنقاء، ويحافظ المونتاج على تسلسل الأفكار، وتُرفق ترجمة بالعربية والإنجليزية." } ] } },
   { slug: "logo-intro", video: "videos/logo-intro.mp4", scene: "strings", seed: 1, o: {},
-    en: { title: "Logo intro", kind: "Ident", desc: "An animated ident that brings a logo to life in a few seconds." },
-    ar: { title: "مقدمة الشعار", kind: "هوية بصرية", desc: "هوية بصرية متحركة تُحيي الشعار في ثوانٍ معدودة." } },
+    en: { title: "Logo intro", kind: "Ident", desc: "An animated ident that brings a logo to life in a few seconds.",
+      lead: "A few seconds of animation that bring a logo to life and open every film that follows.",
+      brief: [
+        { h: "A signature in motion", p: "An ident is the first thing an audience sees and the thing it sees most often. It has to say who you are before a word is spoken." },
+        { h: "Lines that find their place", p: "The mark begins as loose lines and light, gathers, and settles into the logo." },
+        { h: "A dark field and one warm tone", p: "A dark background and a single warm colour keep the eye on the shape of the logo." },
+        { h: "Ready for every screen", p: "Delivered in the lengths and ratios an ident needs, with its own sound mark." } ] },
+    ar: { title: "مقدمة الشعار", kind: "هوية بصرية", desc: "هوية بصرية متحركة تُحيي الشعار في ثوانٍ معدودة.",
+      lead: "ثوانٍ معدودة من التحريك تبعث الحياة في الشعار وتفتتح كل فيلم يأتي بعدها.",
+      brief: [
+        { h: "توقيع متحرك", p: "الهوية المتحركة أول ما يراه المشاهد وأكثر ما يتكرر أمامه، وعليها أن تقول من أنت قبل أن تُقال كلمة." },
+        { h: "خطوط تجد مكانها", p: "يبدأ الشعار خطوطًا وضوءًا متفرقًا، ثم يتجمّع ويستقر في شكله النهائي." },
+        { h: "خلفية داكنة ولون دافئ واحد", p: "خلفية داكنة ولون دافئ واحد يُبقيان العين على شكل الشعار." },
+        { h: "جاهزة لكل شاشة", p: "تُسلَّم بالمدد والمقاسات التي تحتاجها الهوية المتحركة، مع توقيعها الصوتي." } ] } },
   { slug: "kit-reveal", video: "videos/kit-reveal.mp4", scene: "stadium", seed: 31,
     o: { light: [220, 235, 255], floorTop: [30, 96, 52], floorBot: [8, 36, 20], fanA: [220, 220, 230], fanB: [60, 150, 90] },
-    en: { title: "Kit reveal", kind: "Promo", desc: "A promo film that unveils a team's new kit." },
-    ar: { title: "كشف الطقم", kind: "فيلم ترويجي", desc: "فيلم ترويجي يكشف عن الطقم الجديد للفريق." } },
+    en: { title: "Kit reveal", kind: "Promo", desc: "A promo film that unveils a team's new kit.",
+      lead: "A promo film that turns a new kit into a moment: the wait, the lights, and the reveal.",
+      brief: [
+        { h: "Give the fans something to wait for", p: "A new kit is news for a few hours. The film gives it a build-up, so the reveal arrives as an event." },
+        { h: "Tunnel, lights, pitch", p: "It moves from the dark of the tunnel to the floodlit pitch and holds the full kit back until the last seconds." },
+        { h: "Hard light, fast cuts", p: "Strong contrast, close details of fabric and crest, and an edit that follows the rhythm of the stands." },
+        { h: "Cut for the feed", p: "Finished in horizontal and vertical versions, with short cuts for social media." } ] },
+    ar: { title: "كشف الطقم", kind: "فيلم ترويجي", desc: "فيلم ترويجي يكشف عن الطقم الجديد للفريق.",
+      lead: "فيلم ترويجي يجعل من الطقم الجديد لحظة تُنتظر: الترقب، ثم الأضواء، ثم الكشف.",
+      brief: [
+        { h: "شيء ينتظره الجمهور", p: "خبر الطقم الجديد يعيش ساعات قليلة. الفيلم يصنع له تمهيدًا، فيأتي الكشف حدثًا قائمًا بذاته." },
+        { h: "النفق، ثم الأضواء، ثم الملعب", p: "ينتقل الفيلم من عتمة النفق إلى الملعب تحت الأضواء الكاشفة، ولا يُظهر الطقم كاملًا إلا في ثوانيه الأخيرة." },
+        { h: "إضاءة حادة وقطعات سريعة", p: "تباين قوي، ولقطات قريبة لتفاصيل القماش والشعار، ومونتاج يسير على إيقاع المدرجات." },
+        { h: "مُعدّ لمنصات التواصل", p: "يُسلَّم بنسختين أفقية وعمودية، مع مقاطع قصيرة لمنصات التواصل." } ] } },
   /* yt: a YouTube video id. The player then shows that video, and the tile uses its thumbnail
      (unless videos/<slug>.mp4 exists, which always wins for the tile). */
   { slug: "boulevard-world", yt: "Xv8FXny_aB0", video: "videos/boulevard-world.mp4", scene: "city", seed: 77, o: {},
-    en: { title: "Boulevard World", kind: "Cinematic film", desc: "Boulevard World in Riyadh, shot on the Sony FX3." },
-    ar: { title: "بوليفارد وورلد", kind: "فيلم سينمائي", desc: "بوليفارد وورلد في الرياض، صُوِّر بكاميرا Sony FX3." } },
+    year: "2023", runtime: "02:44", place: { en: "Riyadh", ar: "الرياض" },
+    en: { title: "Boulevard World", kind: "Cinematic film", desc: "Boulevard World in Riyadh, shot on the Sony FX3.",
+      lead: "A walk around the world without leaving Riyadh: the streets, performers and visitors of Boulevard World, from daylight to fireworks.",
+      brief: [
+        { h: "The world in one evening", p: "Boulevard World sets the streets of many countries side by side. The film treats the place as a single journey, crossing from one country to the next on foot." },
+        { h: "From daylight to fireworks", p: "It opens in daylight among the pavilions, follows dancers, musicians and fire performers as evening falls, and ends under fireworks at the Boulevard World sign." },
+        { h: "A cinema frame and deep colour", p: "The film is shot in a wide 2.39:1 frame. Reds and warm skin tones sit against cool skies by day, and at night the lights of the place carry the picture." },
+        { h: "A small camera in a crowd", p: "The Sony FX3 is small enough to work inside a crowd. The film stays close: portraits of performers and visitors, details of the streets, and movement at walking pace." } ] },
+    ar: { title: "بوليفارد وورلد", kind: "فيلم سينمائي", desc: "بوليفارد وورلد في الرياض، صُوِّر بكاميرا Sony FX3.",
+      lead: "جولة حول العالم دون مغادرة الرياض: شوارع بوليفارد وورلد وعروضه وزوّاره، من ضوء النهار إلى الألعاب النارية.",
+      brief: [
+        { h: "العالم في أمسية واحدة", p: "يضع بوليفارد وورلد شوارع بلدان كثيرة جنبًا إلى جنب. الفيلم يتعامل مع المكان كرحلة واحدة، ينتقل فيها من بلد إلى آخر سيرًا على الأقدام." },
+        { h: "من ضوء النهار إلى الألعاب النارية", p: "يبدأ الفيلم نهارًا بين الأجنحة، ويرافق الراقصين والعازفين وعروض النار مع حلول المساء، وينتهي تحت الألعاب النارية عند لافتة بوليفارد وورلد." },
+        { h: "إطار سينمائي وألوان مشبعة", p: "صُوِّر الفيلم بنسبة 2.39:1 السينمائية العريضة. في النهار تبرز الألوان الحمراء ودرجات البشرة الدافئة أمام سماء باردة، وفي الليل تتولى أضواء المكان رسم الصورة." },
+        { h: "كاميرا صغيرة وسط الزحام", p: "كاميرا Sony FX3 صغيرة بما يكفي للعمل وسط الزحام. لذلك يبقى الفيلم قريبًا: وجوه المؤدّين والزوّار، وتفاصيل الشوارع، وحركة بإيقاع المشي." } ] } },
   { slug: "fire-safety", video: "videos/fire-safety.mp4", scene: "embers", seed: 41, o: {},
-    en: { title: "Fire safety", kind: "Awareness series", desc: "An awareness series on preventing fires and responding to them." },
-    ar: { title: "السلامة من الحرائق", kind: "سلسلة توعوية", desc: "سلسلة توعوية عن الوقاية من الحرائق وطرق التعامل معها." } },
+    en: { title: "Fire safety", kind: "Awareness series", desc: "An awareness series on preventing fires and responding to them.",
+      lead: "A series of short films on preventing fires at home and at work, and on what to do in the first minutes if one starts.",
+      brief: [
+        { h: "One message per film", p: "People remember one clear instruction better than a list. Each film in the series carries a single message." },
+        { h: "Everyday situations", p: "Each film starts from a familiar moment, shows how it goes wrong, and ends on the right response." },
+        { h: "Clear before dramatic", p: "Simple framing and readable graphics. The danger is shown plainly, without scaring the viewer away from the message." },
+        { h: "Made to be shared", p: "Short lengths, Arabic and English versions, and subtitles so each film works with the sound off." } ] },
+    ar: { title: "السلامة من الحرائق", kind: "سلسلة توعوية", desc: "سلسلة توعوية عن الوقاية من الحرائق وطرق التعامل معها.",
+      lead: "سلسلة أفلام قصيرة عن الوقاية من الحرائق في البيت والعمل، وعمّا يجب فعله في الدقائق الأولى إذا اندلع حريق.",
+      brief: [
+        { h: "رسالة واحدة في كل فيلم", p: "يتذكر الناس تعليمة واحدة واضحة أكثر مما يتذكرون قائمة كاملة. لذلك يحمل كل فيلم في السلسلة رسالة واحدة." },
+        { h: "مواقف من الحياة اليومية", p: "يبدأ كل فيلم من موقف مألوف، ويُظهر كيف يتحول إلى خطر، وينتهي بالتصرف الصحيح." },
+        { h: "الوضوح قبل الإثارة", p: "تكوين بسيط ورسوم توضيحية سهلة القراءة. يظهر الخطر بوضوح دون أن يُنفّر المشاهد من الرسالة." },
+        { h: "صُنعت لتُشارَك", p: "مدد قصيرة، ونسختان بالعربية والإنجليزية، وترجمة مكتوبة ليُفهم كل فيلم حتى بلا صوت." } ] } },
   { slug: "exhibition", video: "videos/exhibition.mp4", scene: "bars", seed: 53, o: {},
-    en: { title: "Exhibition", kind: "Event film", desc: "An event film from the exhibition floor, from opening to close." },
-    ar: { title: "المعرض", kind: "فيلم فعالية", desc: "فيلم فعالية من أرض المعرض، من الافتتاح حتى الختام." } },
+    en: { title: "Exhibition", kind: "Event film", desc: "An event film from the exhibition floor, from opening to close.",
+      lead: "An event film from the exhibition floor: the stands, the visitors and the conversations, from opening to close.",
+      brief: [
+        { h: "Days of exhibition in a few minutes", p: "An exhibition lasts a few days and then it is gone. The film keeps its energy in a form that can be shown long after the stands come down." },
+        { h: "From doors open to lights out", p: "It follows the order of the event: the opening, the busiest hours on the floor, and the close." },
+        { h: "Movement and detail", p: "Moving shots through the aisles are cut against close details of the stands and the people at them." },
+        { h: "Delivered while it still matters", p: "A fast edit after the event, with a full film and shorter cuts for social media." } ] },
+    ar: { title: "المعرض", kind: "فيلم فعالية", desc: "فيلم فعالية من أرض المعرض، من الافتتاح حتى الختام.",
+      lead: "فيلم فعالية من أرض المعرض: الأجنحة والزوّار والأحاديث، من الافتتاح حتى الختام.",
+      brief: [
+        { h: "أيام المعرض في دقائق", p: "يستمر المعرض أيامًا قليلة ثم ينتهي. الفيلم يحفظ حيويته في صورة يمكن عرضها بعد تفكيك الأجنحة بوقت طويل." },
+        { h: "من فتح الأبواب إلى إطفاء الأنوار", p: "يسير الفيلم بترتيب الفعالية: الافتتاح، ثم ساعات الذروة في القاعة، ثم الختام." },
+        { h: "حركة وتفاصيل", p: "لقطات متحركة عبر الممرات تتقاطع مع تفاصيل قريبة للأجنحة ولمن يقفون عندها." },
+        { h: "تسليم والحدث ما زال حاضرًا", p: "مونتاج سريع بعد الفعالية، بفيلم كامل ومقاطع أقصر لمنصات التواصل." } ] } },
   { slug: "heritage", video: "videos/heritage.mp4", scene: "dunes", seed: 9,
     o: { top: [20, 26, 54], bot: [240, 160, 88], sun: [255, 176, 96], sx: .7, sy: .62, lit: [226, 150, 84], shade: [70, 38, 30] },
-    en: { title: "Heritage", kind: "Cultural film", desc: "A cultural film about places and traditions handed down." },
-    ar: { title: "التراث", kind: "فيلم ثقافي", desc: "فيلم ثقافي عن أماكن وتقاليد توارثتها الأجيال." } }
+    en: { title: "Heritage", kind: "Cultural film", desc: "A cultural film about places and traditions handed down.",
+      lead: "A cultural film about places and traditions handed down from one generation to the next, and the people who keep them.",
+      brief: [
+        { h: "What is handed down", p: "Heritage lives in what people still do as much as in what is kept behind glass. The film looks for it in daily work and familiar places." },
+        { h: "Places and their keepers", p: "It moves between places and the people who know them best, and lets them tell the story in their own words." },
+        { h: "Desert light", p: "Low sun, long shadows and the colours of sand and stone, in slow frames that give each place time." },
+        { h: "Sound from the place itself", p: "Sound recorded on location, an original score, and versions in Arabic and English." } ] },
+    ar: { title: "التراث", kind: "فيلم ثقافي", desc: "فيلم ثقافي عن أماكن وتقاليد توارثتها الأجيال.",
+      lead: "فيلم ثقافي عن أماكن وتقاليد توارثتها الأجيال، وعن الناس الذين يحفظونها.",
+      brief: [
+        { h: "ما تتوارثه الأجيال", p: "يعيش التراث في ما يفعله الناس اليوم كما يعيش في ما يُحفظ خلف الزجاج. الفيلم يبحث عنه في العمل اليومي والأماكن المألوفة." },
+        { h: "الأماكن ومن يحفظونها", p: "يتنقل الفيلم بين الأماكن وأعرف الناس بها، ويتركهم يروون الحكاية بكلماتهم." },
+        { h: "ضوء الصحراء", p: "شمس منخفضة وظلال طويلة وألوان الرمل والحجر، في لقطات متأنّية تمنح كل مكان وقته." },
+        { h: "صوت من المكان نفسه", p: "صوت مسجَّل في مواقع التصوير، وموسيقى أصلية، ونسختان بالعربية والإنجليزية." } ] } }
 ];
 
 /* =====================================================================
@@ -510,7 +719,9 @@ const T = {
     ctLede: "Send the brief, the deadline and where the film will be shown. We reply with a treatment and a quote.",
     copy: "Copy address", copied: "Copied",
     home: "MD-film — home", menu: "Menu", prev: "Previous film", next: "Next film",
-    skip: "Skip", slProd: "Prod.", slRoll: "Roll", slScene: "Scene", slTake: "Take", slDate: "Date"
+    skip: "Skip", slProd: "Prod.", slRoll: "Roll", slScene: "Scene", slTake: "Take", slDate: "Date",
+    pAll: "All films", play: "Play film", mType: "Type", mClient: "Client", mPlace: "Location", mYear: "Year", mRuntime: "Runtime", mRelease: "Release",
+    sec: ["Idea", "Story", "Look", "Craft"]
   },
   ar: {
     title: "MD-film — استوديو إنتاج أفلام",
@@ -528,7 +739,9 @@ const T = {
     ctLede: "أرسل لنا موجز المشروع والموعد النهائي ومكان عرض الفيلم، وسنرد عليك بمعالجة وعرض سعر.",
     copy: "نسخ العنوان", copied: "تم النسخ",
     home: "MD-film — الرئيسية", menu: "القائمة", prev: "الفيلم السابق", next: "الفيلم التالي",
-    skip: "تخطي", slProd: "الإنتاج", slRoll: "بكرة", slScene: "مشهد", slTake: "لقطة", slDate: "التاريخ"
+    skip: "تخطي", slProd: "الإنتاج", slRoll: "بكرة", slScene: "مشهد", slTake: "لقطة", slDate: "التاريخ",
+    pAll: "كل الأفلام", play: "شغّل الفيلم", mType: "النوع", mClient: "العميل", mPlace: "الموقع", mYear: "السنة", mRuntime: "المدة", mRelease: "العرض",
+    sec: ["الفكرة", "القصة", "الأسلوب", "التنفيذ"]
   }
 };
 const EMAIL = "hello@md-film.com";
@@ -551,7 +764,9 @@ const el = {
   thVideo: $("#thVideo"), thCanvas: $("#thCanvas"), thFrame: $("#thFrame"), thTitle: $("#thTitle"), thKind: $("#thKind"), thDesc: $("#thDesc"),
   langBtn: $("#langBtn"), langBtn2: $("#langBtn2"), menuBtn: $("#menuBtn"), copyBtn: $("#copyBtn"),
   op: $("#op"), opFlash: $("#opFlash"), opClip: $("#opClip"), opTc: $("#opTc"), opShot: $("#opShot"), opS1: $("#opS1"), opS2: $("#opS2"), chipT: $("#chipT"),
-  lv1: $("#lv1"), lv2: $("#lv2"), lh1: $("#lh1"), lh2: $("#lh2"), d: [$("#d1"), $("#d2"), $("#d3"), $("#d4")]
+  lv1: $("#lv1"), lv2: $("#lv2"), lh1: $("#lh1"), lh2: $("#lh2"), d: [$("#d1"), $("#d2"), $("#d3"), $("#d4")],
+  page: $("#page"), pIn: $("#pIn"), pIdx: $("#pIdx"), pTitle: $("#pTitle"), pDesc: $("#pDesc"), pMeta: $("#pMeta"), pFrame: $("#pFrame"), pCanvas: $("#pCanvas"), pImg: $("#pImg"),
+  pRule: $("#pRule"), pBody: $("#pBody"), pNav: $("#pNav"), pText: $("#pText"), pNextRule: $("#pNextRule"), pNextBox: $("#pNextBox"), pNext: $("#pNext")
 };
 
 /* =====================================================================
@@ -575,12 +790,14 @@ function applyLang() {
   el.langBtn2.lang = lang === "ar" ? "en" : "ar";
   buildList();
   fillFilm();
+  fillPage();
 }
 function toggleLang() {
   lang = lang === "ar" ? "en" : "ar";
   try { localStorage.setItem("mdfilm-lang", lang); } catch (e) {}
   applyLang(); setLines();
-  if (revealed) revealText(active && active.kind === "film" ? el.film : el.home);
+  if (pageFilm >= 0) revealText(el.page);
+  else if (revealed) revealText(active && active.kind === "film" ? el.film : el.home);
 }
 
 /* text that decodes itself into place */
@@ -861,7 +1078,7 @@ function loadPosters() {
         c.drawImage(im, sx, sy, sw, sh, 0, 0, CW, CH);
         const v = c.createRadialGradient(CW / 2, CH / 2, CH * .45, CW / 2, CH / 2, CW * .75);
         v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)"); c.fillStyle = v; c.fillRect(0, 0, CW, CH);
-        f.photo = cv; f.photoUp = false; f.posterWait = false; dirty = 3;
+        f.photo = cv; f.photoUp = false; f.posterWait = false; f.posterUrl = u; dirty = 3; pageFrame();
       };
       im.src = u;
     };
@@ -874,8 +1091,8 @@ function loadVideos() {
     const v = document.createElement("video");
     v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto"; v.crossOrigin = "anonymous";
     v.setAttribute("muted", ""); v.setAttribute("playsinline", "");
-    v.addEventListener("loadeddata", () => { if (v.videoWidth) { f.live = true; f.failed = false; v.play().catch(() => {}); } else f.failed = true; dirty = 3; });
-    v.addEventListener("error", () => { f.live = false; f.failed = true; dirty = 3; });
+    v.addEventListener("loadeddata", () => { if (v.videoWidth) { f.live = true; f.failed = false; v.play().catch(() => {}); } else f.failed = true; dirty = 3; pageFrame(); });
+    v.addEventListener("error", () => { f.live = false; f.failed = true; dirty = 3; pageFrame(); });
     v.src = f.video; f.el = v;
   });
 }
@@ -1211,10 +1428,11 @@ function hit(x, y) {                       /* undo exactly what the shader does:
 }
 
 window.addEventListener("wheel", e => {
-  if (e.target.closest && e.target.closest(".sheet, .menu, .theater")) return;
+  if (e.target.closest && e.target.closest(".sheet, .menu, .theater, .fpage")) return;
   if (e.target.closest && e.target.closest(".list") && el.list.scrollHeight > el.list.clientHeight + 2) return;   /* a long film list scrolls by itself */
   e.preventDefault();
   if (op) { finishOpener(performance.now(), true); return; }
+  if (overlay === 8) { el.page.scrollTop += e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY; return; }   /* the wheel over the header, while a film page is open */
   if (overlay || !G) return;
   endIntro();
   let dx = e.deltaX, dy = e.deltaY;
@@ -1253,7 +1471,7 @@ function pointerEnd(e) {
   if (!ptr.moved) {
     if (e.type === "pointerup") {
       const t = hit(e.clientX, e.clientY);
-      if (t && t === active && t.kind === "film") openTheater(t.film);
+      if (t && t === active && t.kind === "film") openPage(t.film);
       else if (t && t !== active) goTo(t);
     }
     if (moving) queueSnap(0);
@@ -1290,7 +1508,7 @@ window.addEventListener("keydown", e => {
     else if ((e.key === "Enter" || e.key === " ") && !(e.target.closest && e.target.closest("#opSkip"))) { e.preventDefault(); sfx.unlock(); }
     return;
   }
-  if (e.key === "Escape") { if (overlay & 4) closeTheater(); else if (overlay & 1) closeMenu(); else if (overlay & 2) closeSheet(); return; }
+  if (e.key === "Escape") { if (overlay & 4) closeTheater(); else if (overlay & 1) closeMenu(); else if (overlay & 2) closeSheet(); else if (overlay & 8) closePage(); return; }
   if (overlay || !G || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
   let ok = true;
   if (e.key === "ArrowRight") nudge(2 * G.hx, 0);
@@ -1339,10 +1557,10 @@ function setReveal(on) {
   if (film) fillFilm();
   (film ? el.home : el.film).classList.remove("in"); layer.classList.add("in");
   revealText(layer);
-  try { history.replaceState(null, "", film ? "#" + FILMS[active.film].slug : location.pathname + location.search); } catch (e) {}
+  if (pageFilm < 0) try { history.replaceState(null, "", film ? "#" + FILMS[active.film].slug : location.pathname + location.search); } catch (e) {}
 }
 
-/* overlays: 1 menu, 2 sheet, 4 player */
+/* overlays: 1 menu, 2 sheet, 4 player, 8 film page */
 function openMenu() { el.menu.classList.add("open"); el.menu.inert = false; overlay |= 1; el.menuBtn.setAttribute("aria-expanded", "true"); const b = $("[data-close]", el.menu); if (b) b.focus({ preventScroll: true }); }
 function closeMenu() { el.menu.classList.remove("open"); el.menu.inert = true; overlay &= ~1; el.menuBtn.setAttribute("aria-expanded", "false"); }
 function openSheet(sec) {
@@ -1374,19 +1592,168 @@ function closeTheater() {
   el.theater.classList.remove("open"); el.theater.inert = true; overlay &= ~4; thFilm = -1;
   try { el.thVideo.pause(); el.thVideo.removeAttribute("src"); el.thVideo.load(); } catch (e) {}
   if (!el.thFrame.hidden) { el.thFrame.removeAttribute("src"); el.thFrame.hidden = true; }   /* stops the YouTube player */
+  if (pageFilm >= 0) el.page.focus({ preventScroll: true });
 }
+
+/* =====================================================================
+   FILM PAGE — choosing a film opens its page over the field: title and
+   details, the frame with Play, a short brief in sections, the next film.
+   Its address is #/films/<slug>, so a page can be linked to and Back works.
+   ===================================================================== */
+let pageFilm = -1, pageAt = 0, pageFromField = false, pageHome = false, pFrameVis = true;
+const pCtx = el.pCanvas.getContext("2d");
+const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+const say = v => (v && typeof v === "object" ? v[lang] || v.en || v.ar || "" : v || "");      /* a value given once, or once per language */
+const pageY = n => n.getBoundingClientRect().top - el.page.getBoundingClientRect().top + el.page.scrollTop;
+
+function pageFrame() {                                    /* the big frame: the sharp poster when there is one, else the tile's own picture */
+  if (pageFilm < 0) return;
+  const f = FILMS[pageFilm], src = !f.live && f.posterUrl ? f.posterUrl : "";
+  el.pFrame.classList.toggle("can", !!(f.yt || f.live));
+  if (src) { if (el.pImg.getAttribute("src") !== src) el.pImg.src = src; el.pImg.hidden = false; }
+  else { el.pImg.hidden = true; el.pImg.removeAttribute("src"); }
+}
+function fillPage() {
+  if (pageFilm < 0) return;
+  const f = FILMS[pageFilm], L = f[lang];
+  [el.pTitle, el.pDesc].forEach(n => cancelAnimationFrame(n._raf));
+  setText(el.pTitle, L.title); setText(el.pDesc, L.desc || "");
+  el.pIdx.textContent = pad2(pageFilm + 1) + " / " + pad2(N);
+  el.pImg.alt = L.title;
+  document.title = L.title + " — MD-film";
+  el.pMeta.textContent = "";                              /* details: only the rows this film has */
+  [["mType", L.kind], ["mClient", say(f.client)], ["mPlace", say(f.place)], ["mYear", f.year], ["mRuntime", f.runtime], ["mRelease", say(f.release) || (f.yt ? "YouTube" : "")]].forEach(r => {
+    if (!r[1]) return;
+    const row = mk("div"), dd = mk("dd"); dd.setAttribute("data-s", ""); setText(dd, String(r[1]));
+    row.appendChild(mk("dt", "", tr(r[0]) + ":")); row.appendChild(dd); el.pMeta.appendChild(row);
+  });
+  const parts = (L.brief || []).filter(x => x && (x.h || x.p));
+  el.pBody.hidden = el.pRule.hidden = !(L.lead || parts.length);
+  el.pNav.textContent = ""; el.pText.textContent = "";
+  if (L.lead) el.pText.appendChild(mk("p", "fp-lead", L.lead));
+  parts.forEach((x, k) => {
+    const name = x.k || tr("sec")[k] || "", num = pad2(k + 1), sec = mk("section", "fp-sec");
+    sec.id = "p-sec-" + k;
+    sec.appendChild(mk("span", "mono", name ? num + " — " + name : num));
+    if (x.h) sec.appendChild(mk("h3", "", x.h));
+    String(x.p || "").split(/\n\s*\n/).forEach(y => { if (y.trim()) sec.appendChild(mk("p", "", y.trim())); });
+    el.pText.appendChild(sec);
+    const b = mk("button", "", name ? num + " " + name : num); b.type = "button";
+    b.addEventListener("click", () => scrollToSec(k));
+    el.pNav.appendChild(b);
+  });
+  el.pNav.hidden = parts.length < 2;
+  const arrow = mk("span", "ar", "→"); arrow.setAttribute("aria-hidden", "true");
+  el.pNext.textContent = "";
+  el.pNext.appendChild(mk("span", "", tr("next") + ":")); el.pNext.appendChild(mk("b", "", FILMS[(pageFilm + 1) % N][lang].title)); el.pNext.appendChild(arrow);
+  el.pNextBox.hidden = el.pNextRule.hidden = N < 2;
+  markSec();
+}
+function markSec() {                                      /* which section is being read, and whether the frame is still on screen */
+  if (pageFilm < 0) return;
+  const y = el.page.scrollTop + el.page.clientHeight * .4;
+  let on = 0;
+  const secs = $$(".fp-sec", el.pText);
+  secs.forEach((x, k) => { if (pageY(x) <= y) on = k; });
+  if (secs.length && el.page.scrollTop > 0 && el.page.scrollTop + el.page.clientHeight >= el.page.scrollHeight - 4) on = secs.length - 1;   /* the end of the page belongs to the last section */
+  $$("button", el.pNav).forEach((b, k) => { b.classList.toggle("on", k === on); if (k === on) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
+  pFrameVis = el.page.scrollTop < pageY(el.pFrame) + el.pFrame.offsetHeight;
+}
+function scrollToSec(k) {
+  const x = $("#p-sec-" + k); if (!x || !G) return;
+  const top = Math.max(0, pageY(x) - (G.my + Math.max(44, G.g * 3) + G.g * 1.6));
+  try { el.page.scrollTo({ top, behavior: REDUCE ? "auto" : "smooth" }); } catch (e) { el.page.scrollTop = top; }
+}
+function jumpToFilm(i) {                                  /* put the field on film i at once, without the flight */
+  if (active && active.kind === "film" && active.film === i) return;
+  let best = null, bd = Infinity;
+  for (const t of tiles) { if (t.film !== i) continue; const d = Math.hypot(wrap(t.cx - cam.x, G.pw), wrap(t.cy - cam.y, G.ph)); if (d < bd) { bd = d; best = t; } }
+  if (!best) return;
+  endIntro(); clearTimeout(snapTimer); moving = false; fling = false; vel.x = vel.y = 0;
+  if (active) active.foc = 0;
+  if (revealed) setReveal(false);
+  setActive(best); best.foc = 1;
+  cam.x = tgt.x = camPrev.x = best.cx; cam.y = tgt.y = camPrev.y = best.cy + shiftOf(best);
+}
+function showPage(i) {
+  const fresh = pageFilm < 0;
+  closeMenu(); if (overlay & 2) closeSheet(); if (overlay & 4) closeTheater();
+  pageFilm = i; pageAt = performance.now();
+  fillPage(); pageFrame();
+  el.page.scrollTop = 0;
+  el.page.classList.add("open"); el.page.inert = false; root.classList.add("is-page"); overlay |= 8;
+  el.chip.classList.remove("on"); el.stage.classList.remove("point"); hovered = null;
+  el.pIn.classList.remove("go"); void el.pIn.offsetWidth; el.pIn.classList.add("go");      /* replay the entrance */
+  revealText(el.page);
+  markSec();
+  if (fresh) el.page.focus({ preventScroll: true });
+}
+function hidePage() {
+  if (pageFilm < 0) return;
+  if (overlay & 4) closeTheater();
+  pageFilm = -1; pageFromField = false;
+  if (el.page.contains(document.activeElement)) document.activeElement.blur();
+  el.page.classList.remove("open"); el.page.inert = true; root.classList.remove("is-page"); overlay &= ~8;
+  document.title = tr("title");
+}
+function openPage(i) {                                    /* from the field: one step forward in history, so Back returns to the field */
+  let ok = true;
+  try { history.pushState(null, "", "#/films/" + FILMS[i].slug); } catch (e) { ok = false; }
+  showPage(i); pageFromField = ok;
+}
+function nextPage() {                                     /* the next film takes this page's place in history */
+  const i = (pageFilm + 1) % N, from = pageFromField;
+  try { history.replaceState(null, "", "#/films/" + FILMS[i].slug); } catch (e) {}
+  showPage(i); pageFromField = from;
+}
+function closePage(home) {                                /* All films, Escape, the logo */
+  const i = pageFilm; if (i < 0) return;
+  if (pageFromField) {                                    /* the field is one step back in history: route() finishes the job */
+    pageHome = !!home; history.back();
+    setTimeout(() => { if (pageFilm === i) { pageFromField = false; closePage(home); } }, 500);
+    return;
+  }
+  hidePage(); jumpToFilm(i);
+  try { history.pushState(null, "", home ? location.pathname + location.search : "#" + FILMS[i].slug); } catch (e) {}
+  if (home) goHome();
+}
+function readHash() {
+  let h = location.hash.replace(/^#/, ""); try { h = decodeURIComponent(h); } catch (e) {}
+  const m = h.match(/^\/?films?\/([^/]+)\/?$/);
+  return { raw: h, page: !!m, film: FILMS.findIndex(f => f.slug === (m ? m[1] : h)) };
+}
+function route() {                                        /* the address changed: a link, or Back and Forward */
+  if (!G || op) return;
+  const at = readHash();
+  if (at.page && at.film >= 0) { if (pageFilm !== at.film) { showPage(at.film); pageFromField = false; } return; }
+  if (pageFilm >= 0) {                                    /* leaving a film page: the field shows the film that was open */
+    const last = pageFilm, home = pageHome || !at.raw; pageHome = false;
+    hidePage(); jumpToFilm(last);
+    try { history.replaceState(null, "", home ? location.pathname + location.search : "#" + FILMS[last].slug); } catch (e) {}
+    if (home) goHome();
+    return;
+  }
+  if (at.film >= 0) { if (!(active.kind === "film" && active.film === at.film)) goFilm(at.film); } else if (!at.raw && active.kind !== "home") goHome();
+}
+el.page.addEventListener("scroll", markSec, { passive: true });
+window.addEventListener("resize", () => requestAnimationFrame(markSec));
+el.pImg.addEventListener("error", () => { el.pImg.hidden = true; });
+$("#pBack").addEventListener("click", () => closePage(false));
+el.pNext.addEventListener("click", nextPage);
+el.pFrame.addEventListener("click", () => { const f = FILMS[pageFilm]; if (f && (f.yt || f.live)) openTheater(pageFilm); });
 
 el.menuBtn.addEventListener("click", openMenu);
 el.scrim.addEventListener("click", closeSheet);
 el.theater.addEventListener("click", e => { if (e.target === el.theater) closeTheater(); });
 $$("[data-close]").forEach(b => b.addEventListener("click", () => { const p = b.closest(".menu, .sheet, .theater"); if (p === el.menu) closeMenu(); else if (p === el.sheet) closeSheet(); else closeTheater(); }));
 $$("[data-open]").forEach(b => b.addEventListener("click", () => openSheet(b.dataset.open)));
-$$("[data-go]").forEach(b => b.addEventListener("click", () => { closeMenu(); if (!active || active.kind !== "film") goFilm(0); }));
-$("#homeBtn").addEventListener("click", goHome);
-$("#wmBtn").addEventListener("click", goHome);
+$$("[data-go]").forEach(b => b.addEventListener("click", () => { closeMenu(); if (pageFilm >= 0) closePage(); else if (!active || active.kind !== "film") goFilm(0); }));
+const homeClick = () => { if (pageFilm >= 0) closePage(true); else goHome(); };
+$("#homeBtn").addEventListener("click", homeClick);
+$("#wmBtn").addEventListener("click", homeClick);
 $("#prevBtn").addEventListener("click", () => stepFilm(-1));
 $("#nextBtn").addEventListener("click", () => stepFilm(1));
-$("#fView").addEventListener("click", () => { if (active && active.kind === "film") openTheater(active.film); });
+$("#fView").addEventListener("click", () => { if (active && active.kind === "film") openPage(active.film); });
 el.langBtn.addEventListener("click", toggleLang);
 el.langBtn2.addEventListener("click", toggleLang);
 el.copyBtn.addEventListener("click", () => {
@@ -1584,7 +1951,7 @@ el.op.addEventListener("click", e => {
    FRAME LOOP
    ===================================================================== */
 const vis = new Set();
-let lastAtlas = 0, lastTh = 0, frameN = 0, avg = 16, lastNow = 0, lastDrop = 0, lastTc = "", sxPrev = "", syPrev = "";
+let lastAtlas = 0, lastTh = 0, lastPg = 0, frameN = 0, avg = 16, lastNow = 0, lastDrop = 0, lastTc = "", sxPrev = "", syPrev = "";
 const t0 = performance.now();
 
 function frame(now) {
@@ -1621,7 +1988,7 @@ function frame(now) {
     const e10 = ez(.1);
     cam.x += (tgt.x - cam.x) * e10; cam.y += (tgt.y - cam.y) * e10;
     const far = Math.hypot(tgt.x - cam.x, tgt.y - cam.y) > G.vh * .2;
-    const busy = moving || introMove || far || fling || overlay > 0;
+    const busy = moving || introMove || far || fling || (overlay & 7) > 0;
     away += ((busy ? 1 : 0) - away) * ez(.12); if (away < .001) away = 0;
   }
 
@@ -1640,6 +2007,10 @@ function frame(now) {
   const t = now / 1000;
   if (thFilm >= 0 && !FILMS[thFilm].live && now - lastTh > 33) {
     lastTh = now; thCtx.setTransform(el.thCanvas.width / CW, 0, 0, el.thCanvas.height / CH, 0, 0); paintFilm(thCtx, thFilm, t);
+  }
+  if (pageFilm >= 0) {                                 /* a film page is open: keep its frame alive and leave the covered field alone */
+    if (el.pImg.hidden && pFrameVis && now - lastPg > 33) { lastPg = now; pCtx.setTransform(el.pCanvas.width / CW, 0, 0, el.pCanvas.height / CH, 0, 0); paintFilm(pCtx, pageFilm, t); }
+    if (now - pageAt > 600) return;
   }
   if (!gl) return;
   if (markPending && frameN % 10 === 0) uploadMark();
@@ -1714,11 +2085,8 @@ function frame(now) {
    ===================================================================== */
 let rz = 0;
 window.addEventListener("resize", () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(layout); });
-window.addEventListener("hashchange", () => {            /* links like #hajj, and the back button */
-  if (!G || op) return;
-  const slug = decodeURIComponent(location.hash.replace("#", "")), i = FILMS.findIndex(f => f.slug === slug);
-  if (i >= 0) { if (!(active.kind === "film" && active.film === i)) goFilm(i); } else if (!slug && active.kind !== "home") goHome();
-});
+window.addEventListener("hashchange", route);            /* links like #hajj and #/films/hajj, and the back button */
+window.addEventListener("popstate", route);
 
 async function boot() {
   applyLang();
@@ -1739,12 +2107,13 @@ async function boot() {
   layout();
   if (gl) FILMS.forEach((f, i) => uploadCell(i, 0, true));
 
-  const slug = decodeURIComponent(location.hash.replace("#", "")), fi = FILMS.findIndex(f => f.slug === slug);
-  if (fi >= 0) {                                         /* a direct link to a film: no opening, straight there */
+  const at = readHash(), fi = at.film;
+  if (fi >= 0) {                                         /* a direct link to a film or to its page: no opening, straight there */
     let best = null, bd = Infinity;
     for (const t of tiles) { if (t.film !== fi) continue; const d = Math.hypot(wrap(t.cx, G.pw), wrap(t.cy, G.ph)); if (d < bd) { bd = d; best = t; } }
     if (best) { homeTile.foc = 0; setActive(best); best.foc = 1; cam.x = tgt.x = camPrev.x = best.cx; cam.y = tgt.y = camPrev.y = best.cy + shiftOf(best); }
     root.classList.add("ready");
+    if (at.page) showPage(fi);
   } else if (!REDUCE) startOpener();
   else root.classList.add("ready");
   requestAnimationFrame(frame);
