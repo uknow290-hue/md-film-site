@@ -167,7 +167,7 @@ html[dir="rtl"] .view svg, html[dir="rtl"] .chip svg, html[dir="rtl"] .pager but
   pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .3s, visibility 0s .3s; scrollbar-width: none; user-select: text; -webkit-user-select: text; }
 .fpage.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .35s; }
 .fpage::-webkit-scrollbar { display: none; }   /* no scrollbar, so the page lines up with the header above it */
-.fp-shade { position: absolute; top: 0; inset-inline: 0; height: calc(var(--my) + max(44px, var(--g) * 3) + var(--g)); z-index: 2; pointer-events: none; background: linear-gradient(var(--bg) 55%, rgba(11, 11, 11, 0)); opacity: 0; transition: opacity .3s; }
+.fp-shade { position: absolute; top: 0; inset-inline: 0; height: calc(var(--my) + max(44px, var(--g) * 3) + var(--g) * 1.2); z-index: 2; pointer-events: none; background: linear-gradient(var(--bg) calc(100% - var(--g) * 1.2), rgba(11, 11, 11, 0)); opacity: 0; transition: opacity .3s; }   /* what scrolls up is gone before it reaches the header */
 .is-page .fp-shade { opacity: 1; }
 .is-page .layer, .is-page .bottom { visibility: hidden; transition: visibility 0s .35s; }
 .fp-in { position: relative; min-height: 100%; display: flex; flex-direction: column; padding: calc(var(--ph) + var(--g) * 1.2) calc(var(--mx) + var(--g)) 0; }
@@ -1428,11 +1428,14 @@ function hit(x, y) {                       /* undo exactly what the shader does:
 }
 
 window.addEventListener("wheel", e => {
-  if (e.target.closest && e.target.closest(".sheet, .menu, .theater, .fpage")) return;
+  if (e.target.closest && e.target.closest(".sheet, .menu, .theater")) return;
   if (e.target.closest && e.target.closest(".list") && el.list.scrollHeight > el.list.clientHeight + 2) return;   /* a long film list scrolls by itself */
+  if (overlay === 8) {                                         /* a film page is open: the wheel glides it (pinch-zoom is left to the browser) */
+    if (e.ctrlKey) return;
+    e.preventDefault(); pageWheel(e); return;
+  }
   e.preventDefault();
   if (op) { finishOpener(performance.now(), true); return; }
-  if (overlay === 8) { el.page.scrollTop += e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY; return; }   /* the wheel over the header, while a film page is open */
   if (overlay || !G) return;
   endIntro();
   let dx = e.deltaX, dy = e.deltaY;
@@ -1509,6 +1512,7 @@ window.addEventListener("keydown", e => {
     return;
   }
   if (e.key === "Escape") { if (overlay & 4) closeTheater(); else if (overlay & 1) closeMenu(); else if (overlay & 2) closeSheet(); else if (overlay & 8) closePage(); return; }
+  if (overlay & 8) { glide.on = false; glide.pick = -1; }      /* keys scroll a film page the browser's own way */
   if (overlay || !G || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
   let ok = true;
   if (e.key === "ArrowRight") nudge(2 * G.hx, 0);
@@ -1656,13 +1660,37 @@ function markSec() {                                      /* which section is be
   const secs = $$(".fp-sec", el.pText);
   secs.forEach((x, k) => { if (pageY(x) <= y) on = k; });
   if (secs.length && el.page.scrollTop > 0 && el.page.scrollTop + el.page.clientHeight >= el.page.scrollHeight - 4) on = secs.length - 1;   /* the end of the page belongs to the last section */
+  if (glide.pick >= 0 && glide.pick < secs.length) on = glide.pick;                     /* a section chosen from the list stays marked until the reader scrolls */
   $$("button", el.pNav).forEach((b, k) => { b.classList.toggle("on", k === on); if (k === on) b.setAttribute("aria-current", "true"); else b.removeAttribute("aria-current"); });
   pFrameVis = el.page.scrollTop < pageY(el.pFrame) + el.pFrame.offsetHeight;
 }
+/* The page glides: the wheel (or a section link) only says where to go, and every frame the page covers
+   part of the distance that is left, so it starts quickly and settles softly. Touch and keys scroll as usual. */
+const glide = { on: false, at: 0, to: 0, set: 0, pick: -1 };
+function pageGlide(to) {
+  const max = Math.max(0, el.page.scrollHeight - el.page.clientHeight);
+  if (!glide.on) glide.at = el.page.scrollTop;
+  glide.to = clamp(to, 0, max);
+  if (REDUCE) { glide.on = false; el.page.scrollTop = glide.to; return; }
+  glide.on = true;
+}
+function pageWheel(e) {
+  let dy = e.deltaY;
+  if (e.deltaMode === 1) dy *= 33; else if (e.deltaMode === 2) dy *= el.page.clientHeight;
+  glide.pick = -1;
+  pageGlide((glide.on ? glide.to : el.page.scrollTop) + dy);
+}
+function stepGlide(dt) {                                  /* called once a frame while a page is open */
+  if (!glide.on) return;
+  glide.at += (glide.to - glide.at) * (1 - Math.exp(-6.3 * Math.min(dt, 100) / 1000));
+  if (Math.abs(glide.to - glide.at) < .5) { glide.at = glide.to; glide.on = false; }
+  el.page.scrollTop = glide.at; glide.set = el.page.scrollTop;
+}
 function scrollToSec(k) {
   const x = $("#p-sec-" + k); if (!x || !G) return;
-  const top = Math.max(0, pageY(x) - (G.my + Math.max(44, G.g * 3) + G.g * 1.6));
-  try { el.page.scrollTo({ top, behavior: REDUCE ? "auto" : "smooth" }); } catch (e) { el.page.scrollTop = top; }
+  glide.pick = k;
+  pageGlide(pageY(x) - (G.my + Math.max(44, G.g * 3) + G.g * 1.6));
+  markSec();
 }
 function jumpToFilm(i) {                                  /* put the field on film i at once, without the flight */
   if (active && active.kind === "film" && active.film === i) return;
@@ -1680,7 +1708,7 @@ function showPage(i) {
   closeMenu(); if (overlay & 2) closeSheet(); if (overlay & 4) closeTheater();
   pageFilm = i; pageAt = performance.now();
   fillPage(); pageFrame();
-  el.page.scrollTop = 0;
+  glide.on = false; glide.pick = -1; el.page.scrollTop = 0;
   el.page.classList.add("open"); el.page.inert = false; root.classList.add("is-page"); overlay |= 8;
   el.chip.classList.remove("on"); el.stage.classList.remove("point"); hovered = null;
   el.pIn.classList.remove("go"); void el.pIn.offsetWidth; el.pIn.classList.add("go");      /* replay the entrance */
@@ -1691,7 +1719,7 @@ function showPage(i) {
 function hidePage() {
   if (pageFilm < 0) return;
   if (overlay & 4) closeTheater();
-  pageFilm = -1; pageFromField = false;
+  pageFilm = -1; pageFromField = false; glide.on = false;
   if (el.page.contains(document.activeElement)) document.activeElement.blur();
   el.page.classList.remove("open"); el.page.inert = true; root.classList.remove("is-page"); overlay &= ~8;
   document.title = tr("title");
@@ -1735,7 +1763,11 @@ function route() {                                        /* the address changed
   }
   if (at.film >= 0) { if (!(active.kind === "film" && active.film === at.film)) goFilm(at.film); } else if (!at.raw && active.kind !== "home") goHome();
 }
-el.page.addEventListener("scroll", markSec, { passive: true });
+el.page.addEventListener("scroll", () => {
+  if (glide.on && Math.abs(el.page.scrollTop - glide.set) > 2) glide.on = false;     /* something else moved the page (a finger, a key): let it */
+  markSec();
+}, { passive: true });
+el.page.addEventListener("touchstart", () => { glide.on = false; glide.pick = -1; }, { passive: true });
 window.addEventListener("resize", () => requestAnimationFrame(markSec));
 el.pImg.addEventListener("error", () => { el.pImg.hidden = true; });
 $("#pBack").addEventListener("click", () => closePage(false));
@@ -2008,7 +2040,8 @@ function frame(now) {
   if (thFilm >= 0 && !FILMS[thFilm].live && now - lastTh > 33) {
     lastTh = now; thCtx.setTransform(el.thCanvas.width / CW, 0, 0, el.thCanvas.height / CH, 0, 0); paintFilm(thCtx, thFilm, t);
   }
-  if (pageFilm >= 0) {                                 /* a film page is open: keep its frame alive and leave the covered field alone */
+  if (pageFilm >= 0) {                                 /* a film page is open: glide its scroll, keep its frame alive and leave the covered field alone */
+    stepGlide(dt);
     if (el.pImg.hidden && pFrameVis && now - lastPg > 33) { lastPg = now; pCtx.setTransform(el.pCanvas.width / CW, 0, 0, el.pCanvas.height / CH, 0, 0); paintFilm(pCtx, pageFilm, t); }
     if (now - pageAt > 600) return;
   }
