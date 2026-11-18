@@ -131,7 +131,8 @@ html[dir="rtl"] .stats dt { text-align: right; }
 
 /* film */
 .fhead { position: absolute; inset-inline-start: var(--fl); width: var(--fw); top: calc(var(--ft) - var(--g) * 1.9); transform: translateY(-100%); display: flex; align-items: flex-end; gap: calc(var(--g) * 2); }
-.fhead h2 { margin: 0; flex: 1 1 56%; font-size: var(--fs-title); font-weight: 500; letter-spacing: -.035em; line-height: 1; }
+.fhead h2 { margin: -.16em 0; padding: .16em 0; flex: 1 1 56%; min-width: 0; font-size: var(--fs-title); font-weight: 500; letter-spacing: -.035em; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one line: there is no room above it for two */
+.fhead h2.long { font-size: calc(var(--fs-title) * .72); }
 html[lang="ar"] .fhead h2 { line-height: 1.25; font-weight: 600; }
 .fhead p { margin: 0; flex: 1 1 44%; color: var(--ash); max-width: 34em; }
 .list { position: absolute; inset-inline-start: calc(var(--mx) + var(--g)); top: var(--ft); width: calc(var(--fl) - var(--mx) - var(--g) * 4); margin: 0; padding: 0; list-style: none; }
@@ -184,7 +185,7 @@ html[dir="rtl"] .fp-bar .ar, html[dir="rtl"] .fp-next .ar, html[dir="rtl"] .fp-p
 .fp-rule { display: block; height: 1px; background: var(--line); margin-inline: calc((var(--mx) + var(--g)) * -1); }
 .fp-rule::before { content: ""; position: absolute; top: -3px; inset-inline-start: calc(var(--mx) - 3px); width: 7px; height: 7px; border-radius: 50%; background: #55544f; }
 .fp-head { display: grid; grid-template-columns: minmax(0, 1fr) var(--pm); column-gap: calc(var(--g) * 2); align-items: end; padding-block: calc(var(--g) * 2.4) calc(var(--g) * 2); }
-.fp-head h2 { margin: 0 0 .3em; font-size: clamp(44px, 7vw, 118px); font-weight: 500; letter-spacing: -.035em; line-height: .95; }
+.fp-head h2 { margin: 0 0 .3em; font-size: clamp(44px, 7vw, 118px); font-weight: 500; letter-spacing: -.035em; line-height: .95; text-wrap: balance; }
 html[lang="ar"] .fp-head h2 { font-size: clamp(32px, 4.6vw, 78px); font-weight: 600; line-height: 1.3; margin-bottom: .32em; }
 .fp-head p { margin: 0; max-width: 34em; color: var(--ash); }
 .fp-meta { margin: 0; display: grid; gap: .6em; padding-bottom: .25em; }
@@ -343,7 +344,7 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
   .sectors, .list, .bottom .left { display: none; }
   .hint { position: static; transform: none; }
   .fhead { inset-inline: calc(var(--mx) + var(--g)); width: auto; top: calc(var(--ft) + var(--fh) + var(--g) * 2.6); transform: none; flex-direction: column; align-items: stretch; gap: 10px; }
-  .fhead h2 { font-size: 34px; flex: none; }
+  .fhead h2, .fhead h2.long { font-size: 34px; flex: none; white-space: normal; overflow: visible; }
   .fhead p { font-size: 14px; flex: none; }
   .side { inset-inline: calc(var(--mx) + var(--g)); top: auto; bottom: calc(var(--my) + var(--g) * 4.2); height: auto; flex-direction: row; align-items: flex-end; }
   .side .cta { display: flex; align-items: center; gap: 1.2em; }
@@ -558,17 +559,37 @@ html[lang="ar"] .scell small { font-size: .7em; letter-spacing: 0; }
    ideally 16:9, 6–15 s loop, no sound needed for the tile). If the file
    is missing, the tile shows a picture drawn in code instead.
    Up to 31 films fit (one per floating tile). A new entry needs only
-   `slug`, `en` and `ar`; add `yt` (a YouTube link or id) to show that
-   video in the player and its thumbnail on the tile.
+   `slug`, `en` and `ar`; add `yt` (a YouTube link or id) or `vimeo` (a
+   Vimeo link or id) to show that video in the player and its thumbnail
+   on the tile. `poster` (an image file next to this page, or an address)
+   replaces the thumbnail.
    Every film also has its own page (address: #/films/<slug>). The page
    shows what the entry gives it and leaves out what is missing:
      year, runtime            for example year: "2023", runtime: "02:44"
-     client, place, release   one text, or { en: "…", ar: "…" }
+     client, event, place, release   one text, or { en: "…", ar: "…" }
      lead   (inside en / ar)  one or two opening sentences, set large
      brief  (inside en / ar)  up to four sections, each { h: "Heading", p: "Text" }.
                               They are named Idea, Story, Look, Craft unless a section sets k: "Name".
    ===================================================================== */
 const FILMS = [
+  /* vimeo: a Vimeo link or id. The player shows that video. poster: the picture for the tile and the page;
+     without it the tile uses the thumbnail Vimeo has for the video (black bars are trimmed off). */
+  { slug: "jeddah-season-dark-knight", vimeo: "https://vimeo.com/1246754085", poster: "poster-dark-knight.jpg", video: "videos/jeddah-season-dark-knight.mp4", scene: "city", seed: 23, o: {},
+    runtime: "01:43", event: { en: "Jeddah Season", ar: "موسم جدة" }, place: { en: "City Walk, Jeddah", ar: "سيتي ووك، جدة" },
+    en: { title: "Dark Knight", kind: "Promo film", desc: "A promo film that brings the Dark Knight to City Walk for Jeddah Season.",
+      lead: "The Dark Knight comes to City Walk: a promo film for Jeddah Season in which bats fill the night sky over the rides and the lights.",
+      brief: [
+        { h: "Gotham comes to Jeddah", p: "The film announces the Dark Knight at City Walk by treating the venue as his city. The hero appears first, then the place he has come to." },
+        { h: "From the cowl to the crowd", p: "It opens on a close-up of the cowl in near darkness, rises over City Walk at night, drops in on visitors on the rides, and closes on the Jeddah Season logo." },
+        { h: "Cold blue, then neon", p: "The hero is lit in cold blue and warm amber while the venue glows in neon. A wide 2.39:1 frame and strong contrast hold the two worlds together." },
+        { h: "Live footage and visual effects", p: "Aerial and ground footage of City Walk is combined with visual effects: a swarm of bats crossing the skyline, and the Gotham backdrop behind the hero." } ] },
+    ar: { title: "فارس الظلام", kind: "فيلم ترويجي", desc: "فيلم ترويجي يأتي بفارس الظلام إلى سيتي ووك في موسم جدة.",
+      lead: "فارس الظلام يصل إلى سيتي ووك: فيلم ترويجي لموسم جدة تملأ فيه الخفافيش سماء الليل فوق الألعاب والأضواء.",
+      brief: [
+        { h: "غوثام تأتي إلى جدة", p: "يعلن الفيلم وصول فارس الظلام إلى سيتي ووك بأن يجعل المكان مدينته. يظهر البطل أولًا، ثم المكان الذي جاء إليه." },
+        { h: "من القناع إلى الجمهور", p: "يبدأ الفيلم بلقطة قريبة للقناع في شبه ظلام، ثم يرتفع فوق سيتي ووك ليلًا، وينزل إلى الزوّار على الألعاب، ويُختتم بشعار موسم جدة." },
+        { h: "أزرق بارد ثم نيون", p: "يُضاء البطل بأزرق بارد وكهرماني دافئ، بينما يتوهج المكان بأضواء النيون. إطار عريض بنسبة 2.39:1 وتباين قوي يجمعان العالمين في صورة واحدة." },
+        { h: "تصوير حي ومؤثرات بصرية", p: "تجتمع لقطات جوية وأرضية لسيتي ووك مع المؤثرات البصرية: سرب خفافيش يعبر الأفق، وخلفية غوثام خلف البطل." } ] } },
   { slug: "hajj", video: "videos/hajj.mp4", scene: "mountains", seed: 5,
     o: { top: [28, 30, 52], bot: [232, 150, 90], sun: [255, 170, 90], sx: .68, sy: .5, disc: .05, far: [150, 96, 84], near: [14, 10, 14] },
     en: { title: "Hajj", kind: "Cinematic film", desc: "A cinematic film on the journey of Hajj.",
@@ -718,7 +739,7 @@ const T = {
     copy: "Copy address", copied: "Copied",
     home: "MD-film — home", menu: "Menu", prev: "Previous film", next: "Next film",
     skip: "Skip", slProd: "Prod.", slRoll: "Roll", slScene: "Scene", slTake: "Take", slDate: "Date",
-    pAll: "All films", play: "Play film", mType: "Type", mClient: "Client", mPlace: "Location", mYear: "Year", mRuntime: "Runtime", mRelease: "Release",
+    pAll: "All films", play: "Play film", mType: "Type", mClient: "Client", mEvent: "Event", mPlace: "Location", mYear: "Year", mRuntime: "Runtime", mRelease: "Release",
     sec: ["Idea", "Story", "Look", "Craft"]
   },
   ar: {
@@ -738,7 +759,7 @@ const T = {
     copy: "نسخ العنوان", copied: "تم النسخ",
     home: "MD-film — الرئيسية", menu: "القائمة", prev: "الفيلم السابق", next: "الفيلم التالي",
     skip: "تخطي", slProd: "الإنتاج", slRoll: "بكرة", slScene: "مشهد", slTake: "لقطة", slDate: "التاريخ",
-    pAll: "كل الأفلام", play: "شغّل الفيلم", mType: "النوع", mClient: "العميل", mPlace: "الموقع", mYear: "السنة", mRuntime: "المدة", mRelease: "العرض",
+    pAll: "كل الأفلام", play: "شغّل الفيلم", mType: "النوع", mClient: "العميل", mEvent: "الفعالية", mPlace: "الموقع", mYear: "السنة", mRuntime: "المدة", mRelease: "العرض",
     sec: ["الفكرة", "القصة", "الأسلوب", "التنفيذ"]
   }
 };
@@ -1021,6 +1042,10 @@ const PARTICLES = { mountains: 36, dunes: 44, city: 70, stadium: 60, stage: 30, 
 FILMS.forEach((f, i) => {
   if (!f.slug) f.slug = "film-" + (i + 1);
   if (f.yt) { const m = String(f.yt).match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/); if (m) f.yt = m[1]; }
+  if (f.vimeo) {                                               /* a Vimeo link or id; an unlisted video also carries a key (vimeo.com/<id>/<key> or ?h=<key>) */
+    const m = String(f.vimeo).match(/(\d{6,})(?:\/([0-9a-f]{8,}))?(?:.*[?&]h=([0-9a-f]{8,}))?/i);
+    if (m) { f.vimeo = m[1]; if (!f.vimeoKey) f.vimeoKey = m[2] || m[3] || ""; } else f.vimeo = "";
+  }
   if (!SCENES[f.scene]) { f.scene = ["city", "stage", "embers", "bars", "strings"][i % 5]; f.o = {}; }
   if (!f.o) f.o = {};
   if (f.seed == null) f.seed = 11 + i * 17;
@@ -1056,11 +1081,26 @@ function paintFilm(c, i, t) {
   c.drawImage(f.still, 0, 0);
   c.save(); c.globalCompositeOperation = "lighter"; MOTION[f.scene](c, CW, CH, t + i * 7.3, f.o, f.parts); c.restore();
 }
-/* poster images for films that link to YouTube: the thumbnail, cropped to the tile, with the same vignette as the drawn stills */
+/* Wide films often come with black bars baked into their thumbnail. How much to take off the top and off the bottom,
+   as a share of the height (0 when there are no bars). Real bars are equal, so the smaller of the two decides. */
+function barTrim(im) {
+  try {
+    const n = clamp(im.naturalHeight, 60, 360), w = 24, c = document.createElement("canvas"); c.width = w; c.height = n;
+    const g = c.getContext("2d"); g.drawImage(im, 0, 0, w, n);
+    const d = g.getImageData(0, 0, w, n).data;
+    const lit = y => { for (let x = 0; x < w; x++) { const p = (y * w + x) * 4; if (d[p] + d[p + 1] + d[p + 2] > 42) return true; } return false; };
+    let a = 0, b = 0;
+    while (a < n / 3 && !lit(a)) a++;
+    while (b < n / 3 && !lit(n - 1 - b)) b++;
+    const m = Math.min(a, b);
+    return m >= n * .03 ? (m + 1) / n : 0;
+  } catch (e) { return 0; }
+}
+/* poster images for films that link to YouTube or Vimeo, or name a `poster`: cropped to the tile, with the same vignette as the drawn stills */
 function loadPosters() {
   FILMS.forEach(f => {
-    if (!f.yt && !f.poster) return;
-    const urls = f.poster ? [f.poster] : ["maxresdefault", "sddefault", "hqdefault"].map(n => "https://i.ytimg.com/vi/" + f.yt + "/" + n + ".jpg");
+    if (!f.yt && !f.vimeo && !f.poster) return;
+    const urls = f.poster ? [f.poster] : f.yt ? ["maxresdefault", "sddefault", "hqdefault"].map(n => "https://i.ytimg.com/vi/" + f.yt + "/" + n + ".jpg") : [];
     f.posterWait = true;
     const next = () => {
       const u = urls.shift();
@@ -1069,18 +1109,27 @@ function loadPosters() {
       im.onerror = next;
       im.onload = () => {
         if (im.naturalWidth < 200) return next();                      /* YouTube answers a missing size with a tiny grey card */
+        const k = barTrim(im), W0 = im.naturalWidth, H0 = im.naturalHeight * (1 - 2 * k), Y0 = im.naturalHeight * k;   /* the picture between the bars */
         const cv = document.createElement("canvas"); cv.width = CW; cv.height = CH; const c = cv.getContext("2d");
-        const ia = im.naturalWidth / im.naturalHeight, ca = CW / CH;
-        let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0;
-        if (ia > ca) { sw = sh * ca; sx = (im.naturalWidth - sw) / 2; } else { sh = sw / ca; sy = (im.naturalHeight - sh) / 2; }
+        const ia = W0 / H0, ca = CW / CH;
+        let sw = W0, sh = H0, sx = 0, sy = Y0;
+        if (ia > ca) { sw = sh * ca; sx = (W0 - sw) / 2; } else { sh = sw / ca; sy = Y0 + (H0 - sh) / 2; }
         c.drawImage(im, sx, sy, sw, sh, 0, 0, CW, CH);
         const v = c.createRadialGradient(CW / 2, CH / 2, CH * .45, CW / 2, CH / 2, CW * .75);
         v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.5)"); c.fillStyle = v; c.fillRect(0, 0, CW, CH);
         f.photo = cv; f.photoUp = false; f.posterWait = false; f.posterUrl = u; dirty = 3; pageFrame();
+        if (k) try {                                                   /* the film page gets the same picture without its bars */
+          const big = document.createElement("canvas"); big.width = W0; big.height = Math.round(H0);
+          big.getContext("2d").drawImage(im, 0, Y0, W0, H0, 0, 0, W0, big.height);
+          big.toBlob(b => { if (b) { f.posterUrl = URL.createObjectURL(b); pageFrame(); } }, "image/jpeg", .9);
+        } catch (e) {}
       };
       im.src = u;
     };
-    next();
+    if (!urls.length && f.vimeo) {                                     /* Vimeo is asked where the video's thumbnail is */
+      fetch("https://vimeo.com/api/oembed.json?width=1280&url=" + encodeURIComponent("https://vimeo.com/" + f.vimeo + (f.vimeoKey ? "/" + f.vimeoKey : "")))
+        .then(r => r.json()).then(j => { if (j && j.thumbnail_url) urls.push(j.thumbnail_url); next(); }).catch(() => next());
+    } else next();
   });
 }
 function loadVideos() {
@@ -1549,6 +1598,7 @@ function fillFilm() {
   if (!active || active.kind !== "film") return;
   const L = FILMS[active.film][lang];
   [el.fTitle, el.fDesc, el.fKind, el.fIdx].forEach(n => cancelAnimationFrame(n._raf));
+  el.fTitle.classList.toggle("long", L.title.length > 18);
   setText(el.fTitle, L.title); setText(el.fDesc, L.desc); setText(el.fKind, L.kind); setText(el.fIdx, pad2(active.film + 1) + " / " + pad2(N));
   markList();
 }
@@ -1581,9 +1631,10 @@ function openTheater(i) {
   el.thTitle.textContent = L.title; el.thKind.textContent = L.kind; el.thDesc.textContent = L.desc;
   el.chip.classList.remove("on");
   el.thFrame.hidden = true;
-  if (f.yt) {                                                          /* the full film lives on YouTube */
+  if (f.yt || f.vimeo) {                                               /* the full film lives on YouTube or Vimeo */
     el.thVideo.hidden = true; el.thCanvas.hidden = true; el.thFrame.hidden = false; el.thFrame.title = L.title;
-    el.thFrame.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(f.yt) + "?autoplay=1&rel=0&playsinline=1&hl=" + lang;
+    el.thFrame.src = f.yt ? "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(f.yt) + "?autoplay=1&rel=0&playsinline=1&hl=" + lang
+      : "https://player.vimeo.com/video/" + encodeURIComponent(f.vimeo) + "?autoplay=1&title=0&byline=0&portrait=0&dnt=1" + (f.vimeoKey ? "&h=" + encodeURIComponent(f.vimeoKey) : "");
   }
   else if (f.live) { el.thVideo.hidden = false; el.thCanvas.hidden = true; el.thVideo.src = f.video; el.thVideo.play().catch(() => {}); }
   else { el.thVideo.hidden = true; el.thCanvas.hidden = false; }
@@ -1606,6 +1657,7 @@ let pageFilm = -1, pageAt = 0, pageFromField = false, pageHome = false, pFrameVi
 const pCtx = el.pCanvas.getContext("2d");
 const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 const say = v => (v && typeof v === "object" ? v[lang] || v.en || v.ar || "" : v || "");      /* a value given once, or once per language */
+const canPlay = f => !!(f.yt || f.vimeo || f.live);       /* there is a film to play, not only a picture */
 const pageY = n => n.getBoundingClientRect().top - el.page.getBoundingClientRect().top + el.page.scrollTop;
 
 /* The big frame: a canvas with the film's own picture, and over it the sharp poster once that has loaded.
@@ -1615,7 +1667,7 @@ function posterIn() { if (!pImgAt && !el.pImg.hidden) { pImgAt = performance.now
 function pageFrame() {
   if (pageFilm < 0) return;
   const f = FILMS[pageFilm], src = !f.live && f.posterUrl ? f.posterUrl : "";
-  el.pFrame.classList.toggle("can", !!(f.yt || f.live));
+  el.pFrame.classList.toggle("can", canPlay(f));
   if (src) {
     if (el.pImg.getAttribute("src") !== src) { snapOut(el.pImg); pImgAt = 0; el.pImg.src = src; }
     el.pImg.hidden = false;
@@ -1632,7 +1684,7 @@ function paintPage(t) {
 const pp = { over: false, cx: 0, cy: 0, x: 0, y: 0 };
 function stepPlay(dt) {
   const f = FILMS[pageFilm];
-  if (!(f.yt || f.live)) return;
+  if (!canPlay(f)) return;
   let tx = 0, ty = 0;
   if (pp.over && overlay === 8) {
     const r = el.pFrame.getBoundingClientRect(), bw = el.pPlay.offsetWidth, bh = el.pPlay.offsetHeight, m = 10;
@@ -1656,7 +1708,7 @@ function fillPage() {
   el.pImg.alt = L.title;
   document.title = L.title + " — MD-film";
   el.pMeta.textContent = "";                              /* details: only the rows this film has */
-  [["mType", L.kind], ["mClient", say(f.client)], ["mPlace", say(f.place)], ["mYear", f.year], ["mRuntime", f.runtime], ["mRelease", say(f.release) || (f.yt ? "YouTube" : "")]].forEach(r => {
+  [["mType", L.kind], ["mClient", say(f.client)], ["mEvent", say(f.event)], ["mPlace", say(f.place)], ["mYear", f.year], ["mRuntime", f.runtime], ["mRelease", say(f.release) || (f.yt ? "YouTube" : f.vimeo ? "Vimeo" : "")]].forEach(r => {
     if (!r[1]) return;
     const row = mk("div"), dd = mk("dd"); dd.setAttribute("data-s", ""); setText(dd, String(r[1]));
     row.appendChild(mk("dt", "", tr(r[0]) + ":")); row.appendChild(dd); el.pMeta.appendChild(row);
@@ -1806,7 +1858,7 @@ el.pFrame.addEventListener("pointermove", e => { if (e.pointerType === "touch") 
 el.pFrame.addEventListener("pointerleave", () => { pp.over = false; });
 $("#pBack").addEventListener("click", () => closePage(false));
 el.pNext.addEventListener("click", nextPage);
-el.pFrame.addEventListener("click", () => { const f = FILMS[pageFilm]; if (f && (f.yt || f.live)) openTheater(pageFilm); });
+el.pFrame.addEventListener("click", () => { const f = FILMS[pageFilm]; if (f && canPlay(f)) openTheater(pageFilm); });
 
 el.menuBtn.addEventListener("click", openMenu);
 el.scrim.addEventListener("click", closeSheet);
@@ -2170,7 +2222,7 @@ async function boot() {
   let ok = false;
   try { ok = initGL(); } catch (e) { ok = false; gl = null; }
   if (!ok) root.classList.add("nogl");
-  FILMS.forEach(f => { if (!f.yt && !f.poster) buildStill(f); });
+  FILMS.forEach(f => { if (!f.yt && !f.vimeo && !f.poster) buildStill(f); });
   while (!window.innerWidth || !window.innerHeight) await new Promise(r => setTimeout(r, 120));   /* opened in a hidden tab */
   layout();
   if (gl) FILMS.forEach((f, i) => uploadCell(i, 0, true));
