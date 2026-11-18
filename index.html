@@ -192,13 +192,11 @@ html[lang="ar"] .fp-head h2 { font-size: clamp(32px, 4.6vw, 78px); font-weight: 
 .fp-meta dt { color: var(--stone); }
 .fp-meta dd { margin: 0; }
 .fp-frame { aspect-ratio: 2.39 / 1; max-height: 66vh; background: #050505; overflow: hidden; }
-.fp-frame canvas, .fp-frame img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
-.fp-frame img { animation: drift 28s ease-in-out infinite alternate; }
-@keyframes drift { from { transform: scale(1); } to { transform: scale(1.06); } }
+.fp-frame canvas, .fp-frame img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; opacity: 0; transition: opacity .4s; }
+.fp-frame canvas.in, .fp-frame img.in { opacity: 1; }      /* a picture shows only once it is ready, and then it holds still */
 .fp-frame.can { cursor: pointer; }
-.fp-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: .6em; padding: .8em 1.05em; background: var(--ink); color: var(--bg); white-space: nowrap; transition: transform .25s var(--ease); }
+.fp-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; align-items: center; gap: .6em; padding: .8em 1.05em; background: var(--ink); color: var(--bg); white-space: nowrap; will-change: transform; }   /* the script moves it: it follows the mouse inside the frame */
 .fp-frame.can .fp-play { display: inline-flex; }
-.fp-frame.can:hover .fp-play { transform: translate(-50%, -50%) scale(1.07); }
 .fp-play svg { width: .7em; height: .7em; fill: currentColor; }
 .fp-frame + .fp-rule { margin-top: calc(var(--g) * 2.6); }
 .fp-body { display: grid; grid-template-columns: calc(var(--col) * 2 + var(--g)) minmax(0, 1fr); column-gap: var(--g); padding-block: calc(var(--g) * 2.6) calc(var(--g) * 6); }
@@ -765,7 +763,7 @@ const el = {
   langBtn: $("#langBtn"), langBtn2: $("#langBtn2"), menuBtn: $("#menuBtn"), copyBtn: $("#copyBtn"),
   op: $("#op"), opFlash: $("#opFlash"), opClip: $("#opClip"), opTc: $("#opTc"), opShot: $("#opShot"), opS1: $("#opS1"), opS2: $("#opS2"), chipT: $("#chipT"),
   lv1: $("#lv1"), lv2: $("#lv2"), lh1: $("#lh1"), lh2: $("#lh2"), d: [$("#d1"), $("#d2"), $("#d3"), $("#d4")],
-  page: $("#page"), pIn: $("#pIn"), pIdx: $("#pIdx"), pTitle: $("#pTitle"), pDesc: $("#pDesc"), pMeta: $("#pMeta"), pFrame: $("#pFrame"), pCanvas: $("#pCanvas"), pImg: $("#pImg"),
+  page: $("#page"), pIn: $("#pIn"), pIdx: $("#pIdx"), pTitle: $("#pTitle"), pDesc: $("#pDesc"), pMeta: $("#pMeta"), pFrame: $("#pFrame"), pCanvas: $("#pCanvas"), pImg: $("#pImg"), pPlay: $("#pPlay"),
   pRule: $("#pRule"), pBody: $("#pBody"), pNav: $("#pNav"), pText: $("#pText"), pNextRule: $("#pNextRule"), pNextBox: $("#pNextBox"), pNext: $("#pNext")
 };
 
@@ -1604,18 +1602,50 @@ function closeTheater() {
    details, the frame with Play, a short brief in sections, the next film.
    Its address is #/films/<slug>, so a page can be linked to and Back works.
    ===================================================================== */
-let pageFilm = -1, pageAt = 0, pageFromField = false, pageHome = false, pFrameVis = true;
+let pageFilm = -1, pageAt = 0, pageFromField = false, pageHome = false, pFrameVis = true, pImgAt = 0;
 const pCtx = el.pCanvas.getContext("2d");
 const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 const say = v => (v && typeof v === "object" ? v[lang] || v.en || v.ar || "" : v || "");      /* a value given once, or once per language */
 const pageY = n => n.getBoundingClientRect().top - el.page.getBoundingClientRect().top + el.page.scrollTop;
 
-function pageFrame() {                                    /* the big frame: the sharp poster when there is one, else the tile's own picture */
+/* The big frame: a canvas with the film's own picture, and over it the sharp poster once that has loaded.
+   Neither is shown before it is ready, so the frame never flashes grey or another film's picture. */
+function snapOut(n) { n.style.transition = "none"; n.classList.remove("in"); void n.offsetWidth; n.style.transition = ""; }
+function posterIn() { if (!pImgAt && !el.pImg.hidden) { pImgAt = performance.now(); el.pImg.classList.add("in"); } }
+function pageFrame() {
   if (pageFilm < 0) return;
   const f = FILMS[pageFilm], src = !f.live && f.posterUrl ? f.posterUrl : "";
   el.pFrame.classList.toggle("can", !!(f.yt || f.live));
-  if (src) { if (el.pImg.getAttribute("src") !== src) el.pImg.src = src; el.pImg.hidden = false; }
-  else { el.pImg.hidden = true; el.pImg.removeAttribute("src"); }
+  if (src) {
+    if (el.pImg.getAttribute("src") !== src) { snapOut(el.pImg); pImgAt = 0; el.pImg.src = src; }
+    el.pImg.hidden = false;
+    if (el.pImg.complete && el.pImg.naturalWidth > 0) posterIn();
+  } else { el.pImg.hidden = true; snapOut(el.pImg); pImgAt = 0; el.pImg.removeAttribute("src"); }
+}
+function paintPage(t) {
+  const f = FILMS[pageFilm], wait = (f.el && !f.live && !f.failed) || (f.posterWait && !f.live);
+  pCtx.setTransform(el.pCanvas.width / CW, 0, 0, el.pCanvas.height / CH, 0, 0);
+  if (wait) { pCtx.fillStyle = "#050505"; pCtx.fillRect(0, 0, CW, CH); } else paintFilm(pCtx, pageFilm, t);
+  el.pCanvas.classList.toggle("in", !wait);
+}
+/* The Play button follows the mouse inside the frame, like the label on the field, and returns to the middle when the mouse leaves. */
+const pp = { over: false, cx: 0, cy: 0, x: 0, y: 0 };
+function stepPlay(dt) {
+  const f = FILMS[pageFilm];
+  if (!(f.yt || f.live)) return;
+  let tx = 0, ty = 0;
+  if (pp.over && overlay === 8) {
+    const r = el.pFrame.getBoundingClientRect(), bw = el.pPlay.offsetWidth, bh = el.pPlay.offsetHeight, m = 10;
+    if (pp.cx >= r.left && pp.cx <= r.right && pp.cy >= r.top && pp.cy <= r.bottom) {      /* still under the pointer (the page may have scrolled) */
+      tx = clamp(pp.cx - r.left + 18 + bw / 2, bw / 2 + m, r.width - bw / 2 - m) - r.width / 2;
+      ty = clamp(pp.cy - r.top + 16 + bh / 2, bh / 2 + m, r.height - bh / 2 - m) - r.height / 2;
+    } else pp.over = false;
+  }
+  if (pp.x === tx && pp.y === ty) return;
+  const k = REDUCE ? 1 : 1 - Math.exp(-(tx || ty ? 16 : 7) * Math.min(dt, 100) / 1000);
+  pp.x += (tx - pp.x) * k; pp.y += (ty - pp.y) * k;
+  if (Math.abs(tx - pp.x) < .3 && Math.abs(ty - pp.y) < .3) { pp.x = tx; pp.y = ty; }
+  el.pPlay.style.transform = "translate(calc(-50% + " + pp.x.toFixed(1) + "px), calc(-50% + " + pp.y.toFixed(1) + "px))";
 }
 function fillPage() {
   if (pageFilm < 0) return;
@@ -1707,7 +1737,8 @@ function showPage(i) {
   const fresh = pageFilm < 0;
   closeMenu(); if (overlay & 2) closeSheet(); if (overlay & 4) closeTheater();
   pageFilm = i; pageAt = performance.now();
-  fillPage(); pageFrame();
+  fillPage(); pageFrame(); paintPage(pageAt / 1000);     /* the right picture is in the frame before the page shows */
+  pp.over = false; pp.x = pp.y = 0; el.pPlay.style.transform = "";
   glide.on = false; glide.pick = -1; el.page.scrollTop = 0;
   el.page.classList.add("open"); el.page.inert = false; root.classList.add("is-page"); overlay |= 8;
   el.chip.classList.remove("on"); el.stage.classList.remove("point"); hovered = null;
@@ -1769,7 +1800,10 @@ el.page.addEventListener("scroll", () => {
 }, { passive: true });
 el.page.addEventListener("touchstart", () => { glide.on = false; glide.pick = -1; }, { passive: true });
 window.addEventListener("resize", () => requestAnimationFrame(markSec));
-el.pImg.addEventListener("error", () => { el.pImg.hidden = true; });
+el.pImg.addEventListener("load", posterIn);
+el.pImg.addEventListener("error", () => { el.pImg.hidden = true; pImgAt = 0; });
+el.pFrame.addEventListener("pointermove", e => { if (e.pointerType === "touch") return; pp.over = true; pp.cx = e.clientX; pp.cy = e.clientY; });
+el.pFrame.addEventListener("pointerleave", () => { pp.over = false; });
 $("#pBack").addEventListener("click", () => closePage(false));
 el.pNext.addEventListener("click", nextPage);
 el.pFrame.addEventListener("click", () => { const f = FILMS[pageFilm]; if (f && (f.yt || f.live)) openTheater(pageFilm); });
@@ -2020,7 +2054,7 @@ function frame(now) {
     const e10 = ez(.1);
     cam.x += (tgt.x - cam.x) * e10; cam.y += (tgt.y - cam.y) * e10;
     const far = Math.hypot(tgt.x - cam.x, tgt.y - cam.y) > G.vh * .2;
-    const busy = moving || introMove || far || fling || (overlay & 7) > 0;
+    const busy = moving || introMove || far || fling || ((overlay & 7) > 0 && pageFilm < 0);   /* the field steps back for a menu or panel; a film page holds still */
     away += ((busy ? 1 : 0) - away) * ez(.12); if (away < .001) away = 0;
   }
 
@@ -2041,8 +2075,9 @@ function frame(now) {
     lastTh = now; thCtx.setTransform(el.thCanvas.width / CW, 0, 0, el.thCanvas.height / CH, 0, 0); paintFilm(thCtx, thFilm, t);
   }
   if (pageFilm >= 0) {                                 /* a film page is open: glide its scroll, keep its frame alive and leave the covered field alone */
-    stepGlide(dt);
-    if (el.pImg.hidden && pFrameVis && now - lastPg > 33) { lastPg = now; pCtx.setTransform(el.pCanvas.width / CW, 0, 0, el.pCanvas.height / CH, 0, 0); paintFilm(pCtx, pageFilm, t); }
+    stepGlide(dt); stepPlay(dt);
+    const covered = !el.pImg.hidden && pImgAt && now - pImgAt > 450;      /* the poster has faded in over the canvas */
+    if (!covered && pFrameVis && now - lastPg > 33) { lastPg = now; paintPage(t); }
     if (now - pageAt > 600) return;
   }
   if (!gl) return;
