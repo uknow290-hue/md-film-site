@@ -1658,7 +1658,7 @@ function openTheater(i) {
   if (f.yt || f.vimeo) {                                               /* the full film lives on YouTube or Vimeo */
     el.thVideo.hidden = true; el.thCanvas.hidden = true; el.thFrame.hidden = false; el.thFrame.title = L.title;
     el.thFrame.src = f.yt ? "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(f.yt) + "?autoplay=1&rel=0&playsinline=1&hl=" + lang
-      : "https://player.vimeo.com/video/" + encodeURIComponent(f.vimeo) + "?autoplay=1&title=0&byline=0&portrait=0&dnt=1" + (f.vimeoKey ? "&h=" + encodeURIComponent(f.vimeoKey) : "");
+      : "https://player.vimeo.com/video/" + encodeURIComponent(f.vimeo) + "?autoplay=1&title=0&byline=0&portrait=0&dnt=1&transparent=0" + (f.vimeoKey ? "&h=" + encodeURIComponent(f.vimeoKey) : "");
   }
   else if (f.live) { el.thVideo.hidden = false; el.thCanvas.hidden = true; el.thVideo.src = f.video; el.thVideo.play().catch(() => {}); }
   else { el.thVideo.hidden = true; el.thCanvas.hidden = false; }
